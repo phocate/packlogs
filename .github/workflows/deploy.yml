@@ -51,7 +51,8 @@ jobs:
           # Download latest Elite Insights release
           wget -O ei.zip "https://github.com/baaron4/GW2-Elite-Insights-Parser/releases/latest/download/GW2EI.zip"
           unzip ei.zip -d EliteInsights/
-          chmod +x EliteInsights/GuildWars2EliteInsights
+          # The executable is GuildWars2EliteInsights.exe on Linux too
+          chmod +x EliteInsights/GuildWars2EliteInsights.exe
           
       - name: Download arcdps parser scripts
         run: |
@@ -71,10 +72,10 @@ jobs:
             # Copy EI config if it exists in the parser repo
             if [ -f "parser/EI_config/EI_detailed_json_combat_replay.conf" ]; then
               cp parser/EI_config/EI_detailed_json_combat_replay.conf ./ei_config.conf
-              ./EliteInsights/GuildWars2EliteInsights -c ei_config.conf -p logs/ -o processed_logs/
+              dotnet EliteInsights/GuildWars2EliteInsights.exe -c ei_config.conf -p logs/ -o processed_logs/
             else
               # Use default settings with JSON output
-              ./EliteInsights/GuildWars2EliteInsights -p logs/ -o processed_logs/ --save-ouput-file json
+              dotnet EliteInsights/GuildWars2EliteInsights.exe -p logs/ -o processed_logs/ --save-ouput-file json
             fi
           else
             echo "No .evtc files found in logs directory"
