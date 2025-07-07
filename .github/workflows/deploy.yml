@@ -55,27 +55,21 @@ jobs:
     - name: Create working directories
       shell: pwsh
       run: |
-        @("prerequisites", "ei_output", "combined_output", "docs") | ForEach-Object {
-          New-Item -ItemType Directory -Path $_ -Force | Out-Null
-        }
+        New-Item -ItemType Directory -Path "prerequisites" -Force
+        New-Item -ItemType Directory -Path "ei_output" -Force
+        New-Item -ItemType Directory -Path "combined_output" -Force
+        New-Item -ItemType Directory -Path "docs" -Force
         Write-Host "Working directories created successfully"
 
     - name: Download and extract Elite Insights Parser
       shell: pwsh
       run: |
-        $prereqPath = "prerequisites"
-        Set-Location $prereqPath
-        
+        Set-Location "prerequisites"
         Write-Host "Downloading Elite Insights Parser..."
-        $zipUrl = "https://github.com/baaron4/GW2-Elite-Insights-Parser/releases/latest/download/GW2EICLI.zip"
-        Invoke-WebRequest -Uri $zipUrl -OutFile "GW2EICLI.zip" -UseBasicParsing
-        
-        Write-Host "Extracting to GW2EICLI directory..."
+        Invoke-WebRequest -Uri "https://github.com/baaron4/GW2-Elite-Insights-Parser/releases/latest/download/GW2EICLI.zip" -OutFile "GW2EICLI.zip"
         Expand-Archive -Path "GW2EICLI.zip" -DestinationPath "GW2EICLI" -Force
-        
-        $exePath = "GW2EICLI/GuildWars2EliteInsights.exe"
-        if (Test-Path $exePath) {
-          Write-Host "Elite Insights extracted successfully: $exePath"
+        if (Test-Path "GW2EICLI/GuildWars2EliteInsights.exe") {
+          Write-Host "Elite Insights extracted successfully"
         } else {
           Write-Error "Elite Insights executable not found after extraction"
           exit 1
@@ -85,22 +79,17 @@ jobs:
       shell: pwsh
       run: |
         Set-Location "prerequisites"
-        
         Write-Host "Downloading arcdps_top_stats_parser..."
-        $zipUrl = "https://github.com/Drevarr/arcdps_top_stats_parser/archive/refs/heads/main.zip"
-        Invoke-WebRequest -Uri $zipUrl -OutFile "parser.zip" -UseBasicParsing
-        
+        Invoke-WebRequest -Uri "https://github.com/Drevarr/arcdps_top_stats_parser/archive/refs/heads/main.zip" -OutFile "parser.zip"
         Expand-Archive -Path "parser.zip" -DestinationPath "." -Force
         Move-Item -Path "arcdps_top_stats_parser-main" -Destination "arcdps_top_stats_parser" -Force
-        
         Write-Host "Old parser extracted successfully"
 
     - name: Setup Python environment for old parser
       shell: pwsh
       run: |
-        $parserPath = "prerequisites/arcdps_top_stats_parser"
-        if (Test-Path "$parserPath/requirements.txt") {
-          Set-Location $parserPath
+        if (Test-Path "prerequisites/arcdps_top_stats_parser/requirements.txt") {
+          Set-Location "prerequisites/arcdps_top_stats_parser"
           pip install -r requirements.txt
           Write-Host "Parser dependencies installed"
         }
@@ -109,84 +98,59 @@ jobs:
       shell: pwsh
       run: |
         $logFiles = Get-ChildItem -Path "logs" -Filter "*.zevtc" -ErrorAction SilentlyContinue
-        
         if (-not $logFiles) {
           Write-Host "No .zevtc files found in logs directory"
           return
         }
-        
         Write-Host "Found $($logFiles.Count) log files to process"
-        
         $eliteInsightsExe = "prerequisites/GW2EICLI/GuildWars2EliteInsights.exe"
         $configDestination = "prerequisites/GW2EICLI/EliteInsightsConfig.conf"
-        
         if (-not (Test-Path $eliteInsightsExe)) {
           Write-Error "Elite Insights executable not found: $eliteInsightsExe"
           exit 1
         }
-        
         Copy-Item -Path "config/EliteInsightsConfig.conf" -Destination $configDestination -Force
         Write-Host "Configuration file deployed"
-        
         $successCount = 0
         foreach ($logFile in $logFiles) {
           Write-Host "Processing: $($logFile.Name)"
-          
-          $arguments = @("-c", $configDestination, "-p", $logFile.FullName)
-          $process = Start-Process -FilePath $eliteInsightsExe -ArgumentList $arguments -Wait -PassThru -NoNewWindow
-          
+          $process = Start-Process -FilePath $eliteInsightsExe -ArgumentList "-c", $configDestination, "-p", $logFile.FullName -Wait -PassThru -NoNewWindow
           if ($process.ExitCode -eq 0) {
             $successCount++
-            Write-Host "  â Success"
+            Write-Host "Success"
           } else {
-            Write-Warning "  â Failed with exit code $($process.ExitCode)"
+            Write-Warning "Failed with exit code $($process.ExitCode)"
           }
         }
-        
         Write-Host "Processing complete: $successCount/$($logFiles.Count) files successful"
-        
-        $outputFiles = Get-ChildItem -Path "ei_output" -ErrorAction SilentlyContinue
-        if ($outputFiles) {
-          Write-Host "Generated $($outputFiles.Count) Elite Insights output files"
-        }
 
     - name: Run old parser on Elite Insights output
       shell: pwsh
       run: |
         $jsonFiles = Get-ChildItem -Path "ei_output" -Filter "*.json" -ErrorAction SilentlyContinue
-        
         if (-not $jsonFiles) {
           Write-Host "No JSON files found from Elite Insights processing"
           return
         }
-        
         Write-Host "Running old parser on $($jsonFiles.Count) JSON files"
         Set-Location "prerequisites/arcdps_top_stats_parser"
-        
         Copy-Item -Path "../../config/top_stats_config.ini" -Destination "." -Force
-        
         $configContent = Get-Content "top_stats_config.ini" -Raw
-        $updatedConfig = $configContent -replace 'input_directory\s*=.*', 'input_directory = ../../ei_output'
+        $updatedConfig = $configContent -replace 'input_directory.*', 'input_directory = ../../ei_output'
         Set-Content "top_stats_config.ini" -Value $updatedConfig -Encoding UTF8
-        
         $parserScript = Get-ChildItem -Filter "TW5_parse_top_stats_detailed.py" -ErrorAction SilentlyContinue
         if (-not $parserScript) {
           $parserScript = Get-ChildItem -Filter "*top_stats*.py" | Select-Object -First 1
         }
-        
         if ($parserScript) {
           Write-Host "Using parser script: $($parserScript.Name)"
-          
           $pythonProcess = Start-Process -FilePath "python" -ArgumentList $parserScript.Name -Wait -PassThru -NoNewWindow
           if ($pythonProcess.ExitCode -eq 0) {
             Write-Host "Old parser completed successfully"
           } else {
             Write-Warning "Old parser failed with exit code $($pythonProcess.ExitCode)"
           }
-        } else {
-          Write-Warning "No suitable parser script found"
         }
-        
         if (Test-Path "output") {
           Copy-Item -Path "output/*" -Destination "../../combined_output/" -Recurse -Force
           Write-Host "Parser results copied to combined_output"
@@ -196,23 +160,20 @@ jobs:
       shell: pwsh
       run: |
         Write-Host "Preparing GitHub Pages content..."
-        
         if (Test-Path "templates") {
           Copy-Item -Path "templates/*" -Destination "docs/" -Recurse -Force
           Write-Host "Template files copied"
         }
-        
         if (Test-Path "combined_output") {
           Copy-Item -Path "combined_output/*" -Destination "docs/" -Recurse -Force
           Write-Host "Analysis files copied"
         }
-        
         $docsFiles = Get-ChildItem -Path "docs" -Recurse -ErrorAction SilentlyContinue
         if ($docsFiles) {
           Write-Host "Docs directory contains $($docsFiles.Count) files ready for deployment"
         } else {
           Write-Warning "Docs directory is empty - creating placeholder"
-          "# GW2 Log Analysis`n`nProcessing completed. Check back later for results." | Out-File -FilePath "docs/index.md" -Encoding UTF8
+          "# GW2 Log Analysis" | Out-File -FilePath "docs/index.md" -Encoding UTF8
         }
 
     - name: Setup Pages
