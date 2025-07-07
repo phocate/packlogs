@@ -1,0 +1,13 @@
+# Temporary processing files (created during GitHub Actions)
+processed_logs/
+parser/
+EliteInsights/
+*.zip
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Log files and temporary files
+*.log
+*.tmp

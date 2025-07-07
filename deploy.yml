@@ -1,0 +1,177 @@
+# Save this as: .github/workflows/deploy.yml
+
+name: Process Logs and Deploy TiddlyWiki
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'logs/**'
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  process-and-deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '6.0'
+          
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+          
+      - name: Install Python dependencies
+        run: |
+          pip install xlrd xlutils xlwt jsons requests xlsxwriter
+          
+      - name: Download Elite Insights
+        run: |
+          # Download latest Elite Insights release
+          wget -O ei.zip "https://github.com/baaron4/GW2-Elite-Insights-Parser/releases/latest/download/GW2EI.zip"
+          unzip ei.zip -d EliteInsights/
+          chmod +x EliteInsights/GuildWars2EliteInsights
+          
+      - name: Download arcdps parser scripts
+        run: |
+          # Clone the parser repository
+          git clone https://github.com/Drevarr/arcdps_top_stats_parser.git parser/
+          
+      - name: Create directories
+        run: |
+          mkdir -p processed_logs
+          mkdir -p tiddlers
+          mkdir -p data
+          
+      - name: Process EVTC logs with Elite Insights
+        run: |
+          if [ -d "logs" ] && [ "$(ls -A logs/*.evtc* 2>/dev/null)" ]; then
+            echo "Processing log files..."
+            # Copy EI config if it exists in the parser repo
+            if [ -f "parser/EI_config/EI_detailed_json_combat_replay.conf" ]; then
+              cp parser/EI_config/EI_detailed_json_combat_replay.conf ./ei_config.conf
+              ./EliteInsights/GuildWars2EliteInsights -c ei_config.conf -p logs/ -o processed_logs/
+            else
+              # Use default settings with JSON output
+              ./EliteInsights/GuildWars2EliteInsights -p logs/ -o processed_logs/ --save-ouput-file json
+            fi
+          else
+            echo "No .evtc files found in logs directory"
+            touch processed_logs/.gitkeep
+          fi
+          
+      - name: Setup Guild Data (Optional - works without API key)
+        run: |
+          # Create Guild_Data.py - works fine with empty values
+          echo "Creating Guild_Data.py (API key not required for basic functionality)"
+          cat > parser/Guild_Data.py << EOF
+          Guild_ID = ''
+          API_Key = ''
+          EOF
+          
+      - name: Generate TiddlyWiki content
+        run: |
+          cd parser
+          if [ "$(ls -A ../processed_logs/*.json 2>/dev/null)" ]; then
+            echo "Generating TiddlyWiki content from processed logs..."
+            python TW5_parse_top_stats_detailed.py ../processed_logs/
+            
+            # Move generated files to appropriate directories
+            if [ -f "../processed_logs/TW5_top_stats_detailed.tid" ]; then
+              cp ../processed_logs/TW5_top_stats_detailed.tid ../tiddlers/
+            fi
+            
+            # Move chart files
+            find ../processed_logs/ -name "*_TW5_Chart.tid" -exec cp {} ../tiddlers/ \;
+            
+            # Move JSON data files
+            find ../processed_logs/ -name "*.json" -exec cp {} ../data/ \;
+            
+            echo "Content generation completed"
+          else
+            echo "No JSON files found, skipping content generation"
+          fi
+          
+      - name: Prepare TiddlyWiki HTML
+        run: |
+          # Copy base TiddlyWiki HTML if it doesn't exist
+          if [ ! -f "index.html" ]; then
+            if [ -f "parser/example_output/TW5_Top_Stat_Parse.html" ]; then
+              cp parser/example_output/TW5_Top_Stat_Parse.html index.html
+            else
+              echo "Creating basic HTML structure..."
+              cat > index.html << 'EOF'
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <title>GW2 WvW Stats</title>
+          </head>
+          <body>
+              <h1>GW2 WvW Statistics</h1>
+              <p>Processing complete! Check the Actions tab to see if logs were processed successfully.</p>
+              <p>If you see this message, add your TiddlyWiki HTML file as 'index.html' to your repository.</p>
+          </body>
+          </html>
+          EOF
+            fi
+          fi
+          
+      - name: Create artifact structure
+        run: |
+          # Ensure all directories exist for deployment
+          mkdir -p site
+          cp index.html site/
+          
+          if [ -d "tiddlers" ] && [ "$(ls -A tiddlers/)" ]; then
+            cp -r tiddlers site/
+          fi
+          
+          if [ -d "data" ] && [ "$(ls -A data/)" ]; then
+            cp -r data site/
+          fi
+          
+          # Copy any additional assets
+          if [ -d "assets" ]; then
+            cp -r assets site/
+          fi
+          
+      - name: Generate deployment summary
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- Processed logs: $(ls logs/*.evtc* 2>/dev/null | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "- Generated JSON files: $(ls processed_logs/*.json 2>/dev/null | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "- TID files created: $(ls tiddlers/*.tid 2>/dev/null | wc -l)" >> $GITHUB_STEP_SUMMARY
+          echo "- Deployment time: $(date)" >> $GITHUB_STEP_SUMMARY
+          
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+        
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './site'
+          
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
