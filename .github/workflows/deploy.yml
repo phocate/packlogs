@@ -24,7 +24,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+    runs-on: windows-latest  # Changed to Windows runner
     
     steps:
       - name: Checkout repository
@@ -36,12 +36,6 @@ jobs:
         uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '8.0'
-          
-      - name: Install additional .NET packages
-        run: |
-          # Install required packages for GUI applications on headless Linux
-          sudo apt-get update
-          sudo apt-get install -y xvfb libx11-dev libxft-dev libxext-dev
           
       - name: Setup Python
         uses: actions/setup-python@v4
@@ -55,10 +49,8 @@ jobs:
       - name: Download Elite Insights
         run: |
           # Download latest Elite Insights release
-          wget -O ei.zip "https://github.com/baaron4/GW2-Elite-Insights-Parser/releases/latest/download/GW2EI.zip"
-          unzip ei.zip -d EliteInsights/
-          # The executable is GuildWars2EliteInsights.exe on Linux too
-          chmod +x EliteInsights/GuildWars2EliteInsights.exe
+          Invoke-WebRequest -Uri "https://github.com/baaron4/GW2-Elite-Insights-Parser/releases/latest/download/GW2EI.zip" -OutFile "ei.zip"
+          Expand-Archive -Path "ei.zip" -DestinationPath "EliteInsights\"
           
       - name: Download arcdps parser scripts
         run: |
@@ -67,122 +59,154 @@ jobs:
           
       - name: Create directories
         run: |
-          mkdir -p processed_logs
-          mkdir -p tiddlers
-          mkdir -p data
+          New-Item -ItemType Directory -Force -Path "processed_logs"
+          New-Item -ItemType Directory -Force -Path "tiddlers"
+          New-Item -ItemType Directory -Force -Path "data"
           
       - name: Process EVTC logs with Elite Insights
         run: |
-          echo "Checking for log files in logs directory..."
-          ls -la logs/ || echo "logs directory not found"
+          Write-Host "Checking for log files in logs directory..."
+          if (Test-Path "logs") {
+            Get-ChildItem -Path "logs" -Recurse | Format-Table Name, Length, LastWriteTime
+          } else {
+            Write-Host "logs directory not found"
+          }
           
           # Count log files more reliably
-          LOG_COUNT=$(find logs -name "*.evtc" -o -name "*.zevtc" 2>/dev/null | wc -l)
-          echo "Found $LOG_COUNT log files"
+          $LOG_COUNT = 0
+          if (Test-Path "logs") {
+            $LOG_COUNT = (Get-ChildItem -Path "logs" -Include "*.evtc", "*.zevtc" -Recurse).Count
+          }
+          Write-Host "Found $LOG_COUNT log files"
           
-          if [ "$LOG_COUNT" -gt 0 ]; then
-            echo "Processing $LOG_COUNT log files..."
+          if ($LOG_COUNT -gt 0) {
+            Write-Host "Processing $LOG_COUNT log files..."
             # Copy EI config if it exists in the parser repo
-            if [ -f "parser/EI_config/EI_detailed_json_combat_replay.conf" ]; then
-              echo "Using custom EI configuration with CLI version"
-              cp parser/EI_config/EI_detailed_json_combat_replay.conf ./ei_config.conf
-              # Use the CLI version which doesn't require GUI frameworks
-              dotnet EliteInsights/GuildWars2EliteInsights-CLI.exe -c ei_config.conf -p logs/ -o processed_logs/
-            else
-              echo "Using default EI settings with CLI version"
-              # Use CLI version with default settings
-              dotnet EliteInsights/GuildWars2EliteInsights-CLI.exe -p logs/ -o processed_logs/ --save-ouput-file json
-            fi
-          else
-            echo "No .evtc or .zevtc files found in logs directory"
-            touch processed_logs/.gitkeep
-          fi
+            if (Test-Path "parser\EI_config\EI_detailed_json_combat_replay.conf") {
+              Write-Host "Using custom EI configuration"
+              Copy-Item "parser\EI_config\EI_detailed_json_combat_replay.conf" -Destination "ei_config.conf"
+              # Try CLI version first, fall back to GUI version
+              if (Test-Path "EliteInsights\GuildWars2EliteInsights-CLI.exe") {
+                Write-Host "Using CLI version with custom config"
+                & "EliteInsights\GuildWars2EliteInsights-CLI.exe" -c "ei_config.conf" -p "logs\" -o "processed_logs\"
+              } else {
+                Write-Host "CLI version not found, using GUI version with custom config"
+                & "EliteInsights\GuildWars2EliteInsights.exe" -c "ei_config.conf" -p "logs\" -o "processed_logs\"
+              }
+            } else {
+              Write-Host "Using default EI settings"
+              # Try CLI version first, fall back to GUI version
+              if (Test-Path "EliteInsights\GuildWars2EliteInsights-CLI.exe") {
+                Write-Host "Using CLI version with default settings"
+                & "EliteInsights\GuildWars2EliteInsights-CLI.exe" -p "logs\" -o "processed_logs\" --save-output-file json
+              } else {
+                Write-Host "CLI version not found, using GUI version with default settings"
+                & "EliteInsights\GuildWars2EliteInsights.exe" -p "logs\" -o "processed_logs\" --save-output-file json
+              }
+            }
+          } else {
+            Write-Host "No .evtc or .zevtc files found in logs directory"
+            New-Item -Path "processed_logs\.gitkeep" -ItemType File -Force
+          }
           
       - name: Setup Guild Data (Optional - works without API key)
         run: |
           # Create Guild_Data.py - works fine with empty values
-          echo "Creating Guild_Data.py (API key not required for basic functionality)"
-          cat > parser/Guild_Data.py << EOF
-          Guild_ID = ''
-          API_Key = ''
-          EOF
+          Write-Host "Creating Guild_Data.py (API key not required for basic functionality)"
+          @"
+Guild_ID = ''
+API_Key = ''
+"@ | Out-File -FilePath "parser\Guild_Data.py" -Encoding utf8
           
       - name: Generate TiddlyWiki content
         run: |
-          cd parser
-          if [ "$(ls -A ../processed_logs/*.json 2>/dev/null)" ]; then
-            echo "Generating TiddlyWiki content from processed logs..."
+          Set-Location "parser"
+          $jsonFiles = Get-ChildItem -Path "..\processed_logs\" -Filter "*.json" -ErrorAction SilentlyContinue
+          if ($jsonFiles.Count -gt 0) {
+            Write-Host "Generating TiddlyWiki content from processed logs..."
             python TW5_parse_top_stats_detailed.py ../processed_logs/
             
             # Move generated files to appropriate directories
-            if [ -f "../processed_logs/TW5_top_stats_detailed.tid" ]; then
-              cp ../processed_logs/TW5_top_stats_detailed.tid ../tiddlers/
-            fi
+            if (Test-Path "..\processed_logs\TW5_top_stats_detailed.tid") {
+              Copy-Item "..\processed_logs\TW5_top_stats_detailed.tid" -Destination "..\tiddlers\"
+            }
             
             # Move chart files
-            find ../processed_logs/ -name "*_TW5_Chart.tid" -exec cp {} ../tiddlers/ \;
+            Get-ChildItem -Path "..\processed_logs\" -Filter "*_TW5_Chart.tid" -ErrorAction SilentlyContinue | Copy-Item -Destination "..\tiddlers\"
             
-            # Move JSON data files
-            find ../processed_logs/ -name "*.json" -exec cp {} ../data/ \;
+            # Copy JSON data files
+            Get-ChildItem -Path "..\processed_logs\" -Filter "*.json" -ErrorAction SilentlyContinue | Copy-Item -Destination "..\data\"
             
-            echo "Content generation completed"
-          else
-            echo "No JSON files found, skipping content generation"
-          fi
+            Write-Host "Content generation completed"
+          } else {
+            Write-Host "No JSON files found, skipping content generation"
+          }
+          Set-Location ".."
           
       - name: Prepare TiddlyWiki HTML
         run: |
           # Copy base TiddlyWiki HTML if it doesn't exist
-          if [ ! -f "index.html" ]; then
-            if [ -f "parser/example_output/TW5_Top_Stat_Parse.html" ]; then
-              cp parser/example_output/TW5_Top_Stat_Parse.html index.html
-            else
-              echo "Creating basic HTML structure..."
-              cat > index.html << 'EOF'
-          <!DOCTYPE html>
-          <html>
-          <head>
-              <title>GW2 WvW Stats</title>
-          </head>
-          <body>
-              <h1>GW2 WvW Statistics</h1>
-              <p>Processing complete! Check the Actions tab to see if logs were processed successfully.</p>
-              <p>If you see this message, add your TiddlyWiki HTML file as 'index.html' to your repository.</p>
-          </body>
-          </html>
-          EOF
-            fi
-          fi
+          if (-not (Test-Path "index.html")) {
+            if (Test-Path "parser\example_output\TW5_Top_Stat_Parse.html") {
+              Copy-Item "parser\example_output\TW5_Top_Stat_Parse.html" -Destination "index.html"
+            } else {
+              Write-Host "Creating basic HTML structure..."
+              @"
+<!DOCTYPE html>
+<html>
+<head>
+    <title>GW2 WvW Stats</title>
+</head>
+<body>
+    <h1>GW2 WvW Statistics</h1>
+    <p>Processing complete! Check the Actions tab to see if logs were processed successfully.</p>
+    <p>If you see this message, add your TiddlyWiki HTML file as 'index.html' to your repository.</p>
+</body>
+</html>
+"@ | Out-File -FilePath "index.html" -Encoding utf8
+            }
+          }
           
       - name: Create artifact structure
         run: |
           # Ensure all directories exist for deployment
-          mkdir -p site
-          cp index.html site/
+          New-Item -ItemType Directory -Force -Path "site"
+          Copy-Item "index.html" -Destination "site\"
           
-          if [ -d "tiddlers" ] && [ "$(ls -A tiddlers/)" ]; then
-            cp -r tiddlers site/
-          fi
+          if ((Test-Path "tiddlers") -and ((Get-ChildItem "tiddlers" -ErrorAction SilentlyContinue).Count -gt 0)) {
+            Copy-Item -Path "tiddlers" -Destination "site\" -Recurse -Force
+          }
           
-          if [ -d "data" ] && [ "$(ls -A data/)" ]; then
-            cp -r data site/
-          fi
+          if ((Test-Path "data") -and ((Get-ChildItem "data" -ErrorAction SilentlyContinue).Count -gt 0)) {
+            Copy-Item -Path "data" -Destination "site\" -Recurse -Force
+          }
           
           # Copy any additional assets
-          if [ -d "assets" ]; then
-            cp -r assets site/
-          fi
+          if (Test-Path "assets") {
+            Copy-Item -Path "assets" -Destination "site\" -Recurse -Force
+          }
           
       - name: Generate deployment summary
         run: |
-          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          LOG_COUNT=$(find logs -name "*.evtc" -o -name "*.zevtc" 2>/dev/null | wc -l || echo "0")
-          JSON_COUNT=$(find processed_logs -name "*.json" 2>/dev/null | wc -l || echo "0")
-          TID_COUNT=$(find tiddlers -name "*.tid" 2>/dev/null | wc -l || echo "0")
-          echo "- Log files found: $LOG_COUNT" >> $GITHUB_STEP_SUMMARY
-          echo "- Generated JSON files: $JSON_COUNT" >> $GITHUB_STEP_SUMMARY
-          echo "- TID files created: $TID_COUNT" >> $GITHUB_STEP_SUMMARY
-          echo "- Deployment time: $(date)" >> $GITHUB_STEP_SUMMARY
+          Write-Host "## Deployment Summary" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
+          $LOG_COUNT = 0
+          $JSON_COUNT = 0
+          $TID_COUNT = 0
+          
+          if (Test-Path "logs") {
+            $LOG_COUNT = (Get-ChildItem -Path "logs" -Include "*.evtc", "*.zevtc" -Recurse -ErrorAction SilentlyContinue).Count
+          }
+          if (Test-Path "processed_logs") {
+            $JSON_COUNT = (Get-ChildItem -Path "processed_logs" -Filter "*.json" -ErrorAction SilentlyContinue).Count
+          }
+          if (Test-Path "tiddlers") {
+            $TID_COUNT = (Get-ChildItem -Path "tiddlers" -Filter "*.tid" -ErrorAction SilentlyContinue).Count
+          }
+          
+          "- Log files found: $LOG_COUNT" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
+          "- Generated JSON files: $JSON_COUNT" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
+          "- TID files created: $TID_COUNT" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
+          "- Deployment time: $(Get-Date)" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
           
       - name: Setup Pages
         uses: actions/configure-pages@v4
