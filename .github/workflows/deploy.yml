@@ -35,7 +35,13 @@ jobs:
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '6.0'
+          dotnet-version: '8.0'
+          
+      - name: Install additional .NET packages
+        run: |
+          # Install required packages for GUI applications on headless Linux
+          sudo apt-get update
+          sudo apt-get install -y xvfb libx11-dev libxft-dev libxext-dev
           
       - name: Setup Python
         uses: actions/setup-python@v4
@@ -80,11 +86,14 @@ jobs:
             if [ -f "parser/EI_config/EI_detailed_json_combat_replay.conf" ]; then
               echo "Using custom EI configuration"
               cp parser/EI_config/EI_detailed_json_combat_replay.conf ./ei_config.conf
-              dotnet EliteInsights/GuildWars2EliteInsights.exe -c ei_config.conf -p logs/ -o processed_logs/
+              # Try to run in console mode first, fallback to headless GUI if needed
+              dotnet EliteInsights/GuildWars2EliteInsights.exe -c ei_config.conf -p logs/ -o processed_logs/ || \
+              xvfb-run -a dotnet EliteInsights/GuildWars2EliteInsights.exe -c ei_config.conf -p logs/ -o processed_logs/
             else
-              echo "Using default EI settings"
-              # Use default settings with JSON output
-              dotnet EliteInsights/GuildWars2EliteInsights.exe -p logs/ -o processed_logs/ --save-ouput-file json
+              echo "Using default EI settings"  
+              # Try console mode first, fallback to headless GUI
+              dotnet EliteInsights/GuildWars2EliteInsights.exe -p logs/ -o processed_logs/ --save-ouput-file json || \
+              xvfb-run -a dotnet EliteInsights/GuildWars2EliteInsights.exe -p logs/ -o processed_logs/ --save-ouput-file json
             fi
           else
             echo "No .evtc or .zevtc files found in logs directory"
