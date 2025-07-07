@@ -24,7 +24,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: windows-latest  # Changed to Windows runner
+    runs-on: windows-latest
     
     steps:
       - name: Checkout repository
@@ -43,19 +43,15 @@ jobs:
           python-version: '3.9'
           
       - name: Install Python dependencies
-        run: |
-          pip install xlrd xlutils xlwt jsons requests xlsxwriter
+        run: pip install xlrd xlutils xlwt jsons requests xlsxwriter
           
       - name: Download Elite Insights
         run: |
-          # Download latest Elite Insights release
           Invoke-WebRequest -Uri "https://github.com/baaron4/GW2-Elite-Insights-Parser/releases/latest/download/GW2EI.zip" -OutFile "ei.zip"
-          Expand-Archive -Path "ei.zip" -DestinationPath "EliteInsights\"
+          Expand-Archive -Path "ei.zip" -DestinationPath "EliteInsights"
           
       - name: Download arcdps parser scripts
-        run: |
-          # Clone the parser repository
-          git clone https://github.com/Drevarr/arcdps_top_stats_parser.git parser/
+        run: git clone https://github.com/Drevarr/arcdps_top_stats_parser.git parser/
           
       - name: Create directories
         run: |
@@ -72,7 +68,6 @@ jobs:
             Write-Host "logs directory not found"
           }
           
-          # Count log files more reliably
           $LOG_COUNT = 0
           if (Test-Path "logs") {
             $LOG_COUNT = (Get-ChildItem -Path "logs" -Include "*.evtc", "*.zevtc" -Recurse).Count
@@ -81,27 +76,37 @@ jobs:
           
           if ($LOG_COUNT -gt 0) {
             Write-Host "Processing $LOG_COUNT log files..."
-            # Copy EI config if it exists in the parser repo
-            if (Test-Path "parser\EI_config\EI_detailed_json_combat_replay.conf") {
+            
+            $configExists = Test-Path "parser\EI_config\EI_detailed_json_combat_replay.conf"
+            $cliExists = Test-Path "EliteInsights\GuildWars2EliteInsights-CLI.exe"
+            $guiExists = Test-Path "EliteInsights\GuildWars2EliteInsights.exe"
+            
+            if ($configExists) {
               Write-Host "Using custom EI configuration"
               Copy-Item "parser\EI_config\EI_detailed_json_combat_replay.conf" -Destination "ei_config.conf"
-              # Try CLI version first, fall back to GUI version
-              if (Test-Path "EliteInsights\GuildWars2EliteInsights-CLI.exe") {
+              
+              if ($cliExists) {
                 Write-Host "Using CLI version with custom config"
                 & "EliteInsights\GuildWars2EliteInsights-CLI.exe" -c "ei_config.conf" -p "logs\" -o "processed_logs\"
-              } else {
-                Write-Host "CLI version not found, using GUI version with custom config"
+              } elseif ($guiExists) {
+                Write-Host "CLI not found, using GUI version with custom config"
                 & "EliteInsights\GuildWars2EliteInsights.exe" -c "ei_config.conf" -p "logs\" -o "processed_logs\"
+              } else {
+                Write-Error "No Elite Insights executable found"
+                exit 1
               }
             } else {
               Write-Host "Using default EI settings"
-              # Try CLI version first, fall back to GUI version
-              if (Test-Path "EliteInsights\GuildWars2EliteInsights-CLI.exe") {
+              
+              if ($cliExists) {
                 Write-Host "Using CLI version with default settings"
                 & "EliteInsights\GuildWars2EliteInsights-CLI.exe" -p "logs\" -o "processed_logs\" --save-output-file json
-              } else {
-                Write-Host "CLI version not found, using GUI version with default settings"
+              } elseif ($guiExists) {
+                Write-Host "CLI not found, using GUI version with default settings"
                 & "EliteInsights\GuildWars2EliteInsights.exe" -p "logs\" -o "processed_logs\" --save-output-file json
+              } else {
+                Write-Error "No Elite Insights executable found"
+                exit 1
               }
             }
           } else {
@@ -109,88 +114,101 @@ jobs:
             New-Item -Path "processed_logs\.gitkeep" -ItemType File -Force
           }
           
-      - name: Setup Guild Data (Optional - works without API key)
+      - name: Setup Guild Data
         run: |
-          # Create Guild_Data.py - works fine with empty values
           Write-Host "Creating Guild_Data.py (API key not required for basic functionality)"
-          $guildData = @'
-Guild_ID = ''
-API_Key = ''
-'@
-          $guildData | Out-File -FilePath "parser\Guild_Data.py" -Encoding utf8
+          "Guild_ID = ''" | Out-File -FilePath "parser\Guild_Data.py" -Encoding utf8
+          "API_Key = ''" | Out-File -FilePath "parser\Guild_Data.py" -Encoding utf8 -Append
           
       - name: Generate TiddlyWiki content
         run: |
           Set-Location "parser"
+          
           $jsonFiles = Get-ChildItem -Path "..\processed_logs\" -Filter "*.json" -ErrorAction SilentlyContinue
           if ($jsonFiles.Count -gt 0) {
-            Write-Host "Generating TiddlyWiki content from processed logs..."
+            Write-Host "Generating TiddlyWiki content from $($jsonFiles.Count) processed logs..."
             python TW5_parse_top_stats_detailed.py ../processed_logs/
             
-            # Move generated files to appropriate directories
             if (Test-Path "..\processed_logs\TW5_top_stats_detailed.tid") {
               Copy-Item "..\processed_logs\TW5_top_stats_detailed.tid" -Destination "..\tiddlers\"
+              Write-Host "Copied main TID file"
             }
             
-            # Move chart files
-            Get-ChildItem -Path "..\processed_logs\" -Filter "*_TW5_Chart.tid" -ErrorAction SilentlyContinue | Copy-Item -Destination "..\tiddlers\"
+            $chartFiles = Get-ChildItem -Path "..\processed_logs\" -Filter "*_TW5_Chart.tid" -ErrorAction SilentlyContinue
+            if ($chartFiles.Count -gt 0) {
+              $chartFiles | Copy-Item -Destination "..\tiddlers\"
+              Write-Host "Copied $($chartFiles.Count) chart files"
+            }
             
-            # Copy JSON data files
-            Get-ChildItem -Path "..\processed_logs\" -Filter "*.json" -ErrorAction SilentlyContinue | Copy-Item -Destination "..\data\"
+            $jsonDataFiles = Get-ChildItem -Path "..\processed_logs\" -Filter "*.json" -ErrorAction SilentlyContinue
+            if ($jsonDataFiles.Count -gt 0) {
+              $jsonDataFiles | Copy-Item -Destination "..\data\"
+              Write-Host "Copied $($jsonDataFiles.Count) JSON data files"
+            }
             
             Write-Host "Content generation completed"
           } else {
             Write-Host "No JSON files found, skipping content generation"
           }
+          
           Set-Location ".."
           
       - name: Prepare TiddlyWiki HTML
         run: |
-          # Copy base TiddlyWiki HTML if it doesn't exist
           if (-not (Test-Path "index.html")) {
             if (Test-Path "parser\example_output\TW5_Top_Stat_Parse.html") {
               Copy-Item "parser\example_output\TW5_Top_Stat_Parse.html" -Destination "index.html"
+              Write-Host "Copied TiddlyWiki HTML from parser repository"
             } else {
               Write-Host "Creating basic HTML structure..."
-              $htmlContent = @'
-<!DOCTYPE html>
-<html>
-<head>
-    <title>GW2 WvW Stats</title>
-</head>
-<body>
-    <h1>GW2 WvW Statistics</h1>
-    <p>Processing complete! Check the Actions tab to see if logs were processed successfully.</p>
-    <p>If you see this message, add your TiddlyWiki HTML file as 'index.html' to your repository.</p>
-</body>
-</html>
-'@
-              $htmlContent | Out-File -FilePath "index.html" -Encoding utf8
+              $htmlLines = @(
+                '<!DOCTYPE html>',
+                '<html>',
+                '<head>',
+                '    <title>GW2 WvW Stats</title>',
+                '</head>',
+                '<body>',
+                '    <h1>GW2 WvW Statistics</h1>',
+                '    <p>Processing complete! Check the Actions tab to see if logs were processed successfully.</p>',
+                '    <p>If you see this message, add your TiddlyWiki HTML file as ''index.html'' to your repository.</p>',
+                '</body>',
+                '</html>'
+              )
+              $htmlLines | Out-File -FilePath "index.html" -Encoding utf8
             }
+          } else {
+            Write-Host "index.html already exists, skipping creation"
           }
           
       - name: Create artifact structure
         run: |
-          # Ensure all directories exist for deployment
           New-Item -ItemType Directory -Force -Path "site"
           Copy-Item "index.html" -Destination "site\"
+          Write-Host "Copied index.html to site directory"
           
-          if ((Test-Path "tiddlers") -and ((Get-ChildItem "tiddlers" -ErrorAction SilentlyContinue).Count -gt 0)) {
-            Copy-Item -Path "tiddlers" -Destination "site\" -Recurse -Force
+          if (Test-Path "tiddlers") {
+            $tidFiles = Get-ChildItem "tiddlers" -ErrorAction SilentlyContinue
+            if ($tidFiles.Count -gt 0) {
+              Copy-Item -Path "tiddlers" -Destination "site\" -Recurse -Force
+              Write-Host "Copied tiddlers directory with $($tidFiles.Count) files"
+            }
           }
           
-          if ((Test-Path "data") -and ((Get-ChildItem "data" -ErrorAction SilentlyContinue).Count -gt 0)) {
-            Copy-Item -Path "data" -Destination "site\" -Recurse -Force
+          if (Test-Path "data") {
+            $dataFiles = Get-ChildItem "data" -ErrorAction SilentlyContinue
+            if ($dataFiles.Count -gt 0) {
+              Copy-Item -Path "data" -Destination "site\" -Recurse -Force
+              Write-Host "Copied data directory with $($dataFiles.Count) files"
+            }
           }
           
-          # Copy any additional assets
           if (Test-Path "assets") {
             Copy-Item -Path "assets" -Destination "site\" -Recurse -Force
+            Write-Host "Copied assets directory"
           }
           
       - name: Generate deployment summary
         run: |
-          Write-Host "## Deployment Summary" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
           $LOG_COUNT = 0
           $JSON_COUNT = 0
           $TID_COUNT = 0
@@ -205,10 +223,15 @@ API_Key = ''
             $TID_COUNT = (Get-ChildItem -Path "tiddlers" -Filter "*.tid" -ErrorAction SilentlyContinue).Count
           }
           
-          "- Log files found: $LOG_COUNT" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
-          "- Generated JSON files: $JSON_COUNT" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
-          "- TID files created: $TID_COUNT" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
-          "- Deployment time: $(Get-Date)" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
+          $summary = @(
+            "## Deployment Summary",
+            "- Log files found: $LOG_COUNT",
+            "- Generated JSON files: $JSON_COUNT", 
+            "- TID files created: $TID_COUNT",
+            "- Deployment time: $(Get-Date -Format 'yyyy-MM-dd HH:mm:ss UTC')"
+          )
+          
+          $summary | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
           
       - name: Setup Pages
         uses: actions/configure-pages@v4
