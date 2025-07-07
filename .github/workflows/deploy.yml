@@ -72,126 +72,76 @@ jobs:
             exit 1
           }
           
-      - name: Process EVTC logs with Elite Insights
+      - name: Process EVTC logs with Elite Insights CLI
         run: |
-          Write-Host "=== ELITE INSIGHTS PROCESSING ==="
+          Write-Host "=== ELITE INSIGHTS CLI PROCESSING ==="
           
-          Write-Host "Checking Elite Insights directory structure:"
+          Write-Host "Checking Elite Insights CLI directory structure:"
           Get-ChildItem "EliteInsights" -Recurse | Where-Object { $_.Name -like "*.exe" } | Format-Table Name, FullName
           
           $cliPath = Get-ChildItem "EliteInsights" -Recurse -Filter "*CLI*.exe" | Select-Object -First 1
-          $guiPath = Get-ChildItem "EliteInsights" -Recurse -Filter "GuildWars2EliteInsights.exe" | Select-Object -First 1
+          if (-not $cliPath) {
+            $cliPath = Get-ChildItem "EliteInsights" -Recurse -Filter "GuildWars2EliteInsights.exe" | Select-Object -First 1
+          }
           
-          Write-Host "CLI found: $($cliPath -ne $null)"
-          Write-Host "GUI found: $($guiPath -ne $null)"
-          
-          if ($cliPath) {
-            Write-Host "Using CLI: $($cliPath.FullName)"
-            $exePath = $cliPath.FullName
-            $useGui = $false
-          } elseif ($guiPath) {
-            Write-Host "Using GUI with command line: $($guiPath.FullName)"
-            $exePath = $guiPath.FullName
-            $useGui = $true
-          } else {
+          if (-not $cliPath) {
             Write-Host "##[error]No Elite Insights executable found"
             exit 1
           }
           
-          Write-Host "Processing logs with Elite Insights..."
+          Write-Host "Using CLI: $($cliPath.FullName)"
           
-          if ($useGui) {
-            Write-Host "Note: GUI version may ignore output directory parameter"
-            Write-Host "Command: $exePath logs/*.zevtc"
-            
-            # GUI version: just pass the log files directly
-            $logFiles = Get-ChildItem "logs" -Include "*.evtc", "*.zevtc" -Recurse
-            foreach ($logFile in $logFiles) {
-              Write-Host "Processing: $($logFile.Name)"
-              & $exePath $logFile.FullName
-            }
-          } else {
-            Write-Host "Command: $exePath -p logs\ -o processed_logs\ --save-output-file html json"
-            & $exePath -p "logs\" -o "processed_logs\" --save-output-file html json
-          }
+          Write-Host "Processing logs with Elite Insights CLI..."
+          Write-Host "Command: $($cliPath.FullName) -p logs\ -o processed_logs\"
           
-          Write-Host "Elite Insights processing completed"
+          & $cliPath.FullName -p "logs\" -o "processed_logs\"
           
-          Write-Host "Checking for output files in multiple locations..."
+          Write-Host "Elite Insights CLI processing completed"
           
-          # Check processed_logs directory
-          Write-Host "Files in processed_logs:"
-          Get-ChildItem "processed_logs" -ErrorAction SilentlyContinue | Format-Table Name, Length, Extension
+          Write-Host "Checking Elite Insights output..."
+          Get-ChildItem "processed_logs" | Format-Table Name, Length, Extension
           
-          # Check logs directory (GUI might output here)
-          Write-Host "Files in logs directory:"
-          Get-ChildItem "logs" -Filter "*.json" -ErrorAction SilentlyContinue | Format-Table Name, Length, Extension
-          Get-ChildItem "logs" -Filter "*.html" -ErrorAction SilentlyContinue | Format-Table Name, Length, Extension
+          $jsonFiles = Get-ChildItem -Path "processed_logs" -Filter "*.json"
+          Write-Host "Generated $($jsonFiles.Count) JSON files"
           
-          # Check current directory
-          Write-Host "JSON/HTML files in current directory:"
-          Get-ChildItem -Filter "*.json" -ErrorAction SilentlyContinue | Format-Table Name, Length, Extension
-          Get-ChildItem -Filter "*.html" -ErrorAction SilentlyContinue | Format-Table Name, Length, Extension
-          
-          # Collect all generated files
-          $allJsonFiles = @()
-          $allHtmlFiles = @()
-          
-          $allJsonFiles += Get-ChildItem "processed_logs" -Filter "*.json" -ErrorAction SilentlyContinue
-          $allJsonFiles += Get-ChildItem "logs" -Filter "*.json" -ErrorAction SilentlyContinue
-          $allJsonFiles += Get-ChildItem -Filter "*.json" -ErrorAction SilentlyContinue
-          
-          $allHtmlFiles += Get-ChildItem "processed_logs" -Filter "*.html" -ErrorAction SilentlyContinue
-          $allHtmlFiles += Get-ChildItem "logs" -Filter "*.html" -ErrorAction SilentlyContinue
-          $allHtmlFiles += Get-ChildItem -Filter "*.html" -ErrorAction SilentlyContinue
-          
-          Write-Host "Total found: $($allJsonFiles.Count) JSON files and $($allHtmlFiles.Count) HTML files"
-          
-          # Move all output files to processed_logs directory
-          if ($allJsonFiles.Count -gt 0 -or $allHtmlFiles.Count -gt 0) {
-            Write-Host "Moving output files to processed_logs directory..."
-            
-            foreach ($file in $allJsonFiles) {
-              if ($file.DirectoryName -ne (Resolve-Path "processed_logs").Path) {
-                Write-Host "Moving JSON: $($file.Name)"
-                Move-Item $file.FullName "processed_logs\" -Force
-              }
-            }
-            
-            foreach ($file in $allHtmlFiles) {
-              if ($file.DirectoryName -ne (Resolve-Path "processed_logs").Path) {
-                Write-Host "Moving HTML: $($file.Name)"
-                Move-Item $file.FullName "processed_logs\" -Force
-              }
-            }
-            
-            Write-Host "Final processed_logs contents:"
-            Get-ChildItem "processed_logs" | Format-Table Name, Length, Extension
-          } else {
-            Write-Host "##[error]Elite Insights failed to generate any output files"
+          if ($jsonFiles.Count -eq 0) {
+            Write-Host "##[error]Elite Insights CLI failed to generate JSON files"
+            Write-Host "Checking for any output files:"
+            Get-ChildItem "processed_logs" -Recurse -ErrorAction SilentlyContinue | Format-Table Name, FullName
             exit 1
           }
           
-      - name: Process logs with Python parser
+      - name: Process logs with GW2 EI Log Combiner
         run: |
-          Write-Host "=== PYTHON PARSER PROCESSING ==="
+          Write-Host "=== GW2 EI LOG COMBINER PROCESSING ==="
           
           $jsonFiles = Get-ChildItem -Path "processed_logs" -Filter "*.json"
-          $htmlFiles = Get-ChildItem -Path "processed_logs" -Filter "*.html"
-          Write-Host "Processing $($jsonFiles.Count) JSON files and $($htmlFiles.Count) HTML files"
+          Write-Host "Processing $($jsonFiles.Count) JSON files with Log Combiner"
           
-          Copy-Item "parser\TW5_parse_top_stats_detailed.py" -Destination "."
-          Copy-Item "parser\TW5_parse_top_stats_tools.py" -Destination "."
-          Copy-Item "parser\GW2_Data.py" -Destination "."
-          Copy-Item "parser\GW2_Color_Scheme.py" -Destination "."
-          
-          if ($jsonFiles.Count -gt 0) {
-            Write-Host "Running TW5 parser: python TW5_parse_top_stats_detailed.py processed_logs tiddlers data"
-            python TW5_parse_top_stats_detailed.py "processed_logs" "tiddlers" "data"
-            Write-Host "Python parser completed"
-          } else {
-            Write-Host "No JSON files found, skipping Python parser"
+          # Find the log combiner executable
+          $combinerPath = Get-ChildItem "LogCombiner" -Recurse -Filter "*.exe" | Select-Object -First 1
+          if (-not $combinerPath) {
+            $combinerPath = Get-ChildItem "LogCombiner" -Recurse -Filter "*.py" | Where-Object { $_.Name -like "*main*" -or $_.Name -like "*combiner*" } | Select-Object -First 1
           }
+          
+          if (-not $combinerPath) {
+            Write-Host "##[error]Could not find Log Combiner executable or script"
+            Write-Host "Log Combiner contents:"
+            Get-ChildItem "LogCombiner" -Recurse | Format-Table Name, FullName
+            exit 1
+          }
+          
+          Write-Host "Found Log Combiner: $($combinerPath.FullName)"
+          
+          if ($combinerPath.Extension -eq ".exe") {
+            Write-Host "Running Log Combiner executable..."
+            & $combinerPath.FullName --input "processed_logs" --output "tiddlers" --format tiddlywiki
+          } else {
+            Write-Host "Running Log Combiner Python script..."
+            python $combinerPath.FullName --input "processed_logs" --output "tiddlers" --format tiddlywiki
+          }
+          
+          Write-Host "Log Combiner completed"
           
           Write-Host "Generated tiddler files:"
           Get-ChildItem "tiddlers" -ErrorAction SilentlyContinue | Format-Table Name, Length
@@ -199,49 +149,36 @@ jobs:
           Write-Host "Generated data files:"
           Get-ChildItem "data" -ErrorAction SilentlyContinue | Format-Table Name, Length
           
-          Write-Host "Current directory contents:"
+          Write-Host "Current directory tid files:"
           Get-ChildItem -Filter "*.tid" -ErrorAction SilentlyContinue | Format-Table Name, Length
           
-          Write-Host "Generated files in processed_logs:"
-          Get-ChildItem "processed_logs" -Filter "*.tid" -ErrorAction SilentlyContinue | Format-Table Name, Length
+          Write-Host "JSON files in current directory:"
+          Get-ChildItem -Filter "*Log_Summary*.json" -ErrorAction SilentlyContinue | Format-Table Name, Length
           
-      - name: Verify TiddlyWiki output
+      - name: Setup TiddlyWiki container
         run: |
-          Write-Host "=== VERIFYING OUTPUT ==="
+          Write-Host "=== SETTING UP TIDDLYWIKI CONTAINER ==="
           
-          Write-Host "Looking for TiddlyWiki HTML file..."
-          $htmlFiles = Get-ChildItem -Filter "*.html" -ErrorAction SilentlyContinue
-          if ($htmlFiles.Count -eq 0) {
-            Write-Host "Checking in processed_logs for HTML..."
-            $htmlFiles = Get-ChildItem "processed_logs" -Filter "*.html" -ErrorAction SilentlyContinue
-          }
+          # Check if we have the TiddlyWiki HTML file from the log combiner
+          $tiddlyHtml = Get-ChildItem "LogCombiner" -Recurse -Filter "*Top_Stats_Index.html" | Select-Object -First 1
           
-          Write-Host "HTML files found: $($htmlFiles.Count)"
-          $htmlFiles | Format-Table Name, FullName, Length
-          
-          Write-Host "Looking for .tid files..."
-          $tidFiles = @()
-          $tidFiles += Get-ChildItem -Filter "*.tid" -ErrorAction SilentlyContinue
-          $tidFiles += Get-ChildItem "tiddlers" -Filter "*.tid" -ErrorAction SilentlyContinue
-          $tidFiles += Get-ChildItem "processed_logs" -Filter "*.tid" -ErrorAction SilentlyContinue
-          
-          Write-Host "Tiddler files found: $($tidFiles.Count)"
-          $tidFiles | Format-Table Name, FullName, Length
-          
-          if ($htmlFiles.Count -eq 0 -and $tidFiles.Count -eq 0) {
-            Write-Host "##[error]No TiddlyWiki files generated"
-            Write-Host "Full directory listing:"
-            Get-ChildItem -Recurse | Format-Table Name, FullName
-            exit 1
-          }
-          
-          if ($htmlFiles.Count -gt 0) {
-            Write-Host "TiddlyWiki HTML container found"
+          if ($tiddlyHtml) {
+            Write-Host "Found TiddlyWiki container: $($tiddlyHtml.FullName)"
+            Copy-Item $tiddlyHtml.FullName -Destination "index.html"
           } else {
-            Write-Host "No HTML container found - TiddlyWiki may need to be created separately"
+            Write-Host "No TiddlyWiki container found in LogCombiner, checking for standalone HTML..."
+            $htmlFiles = Get-ChildItem "LogCombiner" -Recurse -Filter "*.html" | Select-Object -First 1
+            
+            if ($htmlFiles) {
+              Write-Host "Using HTML file: $($htmlFiles.FullName)"
+              Copy-Item $htmlFiles.FullName -Destination "index.html"
+            } else {
+              Write-Host "No HTML container found, downloading default TiddlyWiki..."
+              Invoke-WebRequest -Uri "https://tiddlywiki.com/empty.html" -OutFile "index.html"
+            }
           }
           
-          Write-Host "Output ready for deployment"
+          Write-Host "TiddlyWiki container ready: index.html"
           
       - name: Setup Pages
         uses: actions/configure-pages@v3
