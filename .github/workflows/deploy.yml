@@ -113,10 +113,11 @@ jobs:
         run: |
           # Create Guild_Data.py - works fine with empty values
           Write-Host "Creating Guild_Data.py (API key not required for basic functionality)"
-          @"
+          $guildData = @'
 Guild_ID = ''
 API_Key = ''
-"@ | Out-File -FilePath "parser\Guild_Data.py" -Encoding utf8
+'@
+          $guildData | Out-File -FilePath "parser\Guild_Data.py" -Encoding utf8
           
       - name: Generate TiddlyWiki content
         run: |
@@ -151,7 +152,7 @@ API_Key = ''
               Copy-Item "parser\example_output\TW5_Top_Stat_Parse.html" -Destination "index.html"
             } else {
               Write-Host "Creating basic HTML structure..."
-              @"
+              $htmlContent = @'
 <!DOCTYPE html>
 <html>
 <head>
@@ -163,7 +164,8 @@ API_Key = ''
     <p>If you see this message, add your TiddlyWiki HTML file as 'index.html' to your repository.</p>
 </body>
 </html>
-"@ | Out-File -FilePath "index.html" -Encoding utf8
+'@
+              $htmlContent | Out-File -FilePath "index.html" -Encoding utf8
             }
           }
           
