@@ -94,9 +94,13 @@ jobs:
           Write-Host "Processing logs with Elite Insights CLI..."
           Write-Host "Command: $($cliPath.FullName) -p logs\ -o processed_logs\"
           
-          & $cliPath.FullName -p "logs\" -o "processed_logs\"
+          # Use Start-Process with -Wait to ensure we wait for completion
+          $process = Start-Process -FilePath $cliPath.FullName -ArgumentList "-p", "logs\", "-o", "processed_logs\" -Wait -PassThru -NoNewWindow
           
-          Write-Host "Elite Insights CLI processing completed"
+          Write-Host "Elite Insights CLI process completed with exit code: $($process.ExitCode)"
+          
+          # Wait a bit more to ensure files are written
+          Start-Sleep -Seconds 5
           
           Write-Host "Checking Elite Insights output..."
           Get-ChildItem "processed_logs" | Format-Table Name, Length, Extension
@@ -108,6 +112,11 @@ jobs:
             Write-Host "##[error]Elite Insights CLI failed to generate JSON files"
             Write-Host "Checking for any output files:"
             Get-ChildItem "processed_logs" -Recurse -ErrorAction SilentlyContinue | Format-Table Name, FullName
+            
+            Write-Host "Checking logs directory for output:"
+            Get-ChildItem "logs" -Filter "*.json" -ErrorAction SilentlyContinue | Format-Table Name, FullName
+            
+            Write-Host "Process exit code was: $($process.ExitCode)"
             exit 1
           }
           
