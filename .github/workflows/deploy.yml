@@ -150,60 +150,60 @@ jobs:
         
         # Create a basic index.html if it doesn't exist
         if (-not (Test-Path "docs\index.html")) {
-          @'
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>GW2 Combat Log Analysis</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .file-list { margin: 20px 0; }
-        .file-item { margin: 10px 0; }
-        .file-item a { text-decoration: none; color: #007bff; }
-        .file-item a:hover { text-decoration: underline; }
-    </style>
-</head>
-<body>
-    <h1>GW2 Combat Log Analysis</h1>
-    <p>Generated combat log analysis files:</p>
-    <div class="file-list" id="fileList">
-        <p>Loading files...</p>
-    </div>
-    <script>
-        // Auto-generate file list
-        fetch('.')
-            .then(response => response.text())
-            .then(html => {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const links = doc.querySelectorAll('a');
-                const fileList = document.getElementById('fileList');
-                fileList.innerHTML = '';
-                
-                links.forEach(link => {
-                    const href = link.getAttribute('href');
-                    if (href && (href.endsWith('.json') || href.endsWith('.tid') || href.endsWith('.html'))) {
-                        const fileItem = document.createElement('div');
-                        fileItem.className = 'file-item';
-                        fileItem.innerHTML = `<a href="${href}">${href}</a>`;
-                        fileList.appendChild(fileItem);
-                    }
-                });
-                
-                if (fileList.children.length === 0) {
-                    fileList.innerHTML = '<p>No analysis files found.</p>';
-                }
-            })
-            .catch(error => {
-                console.error('Error loading file list:', error);
-                document.getElementById('fileList').innerHTML = '<p>Error loading file list.</p>';
-            });
-    </script>
-</body>
-</html>
-'@ | Out-File -FilePath "docs\index.html" -Encoding UTF8
+          $htmlContent = @"
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1">
+            <title>GW2 Combat Log Analysis</title>
+            <style>
+                body { font-family: Arial, sans-serif; margin: 20px; }
+                .file-list { margin: 20px 0; }
+                .file-item { margin: 10px 0; }
+                .file-item a { text-decoration: none; color: #007bff; }
+                .file-item a:hover { text-decoration: underline; }
+            </style>
+        </head>
+        <body>
+            <h1>GW2 Combat Log Analysis</h1>
+            <p>Generated combat log analysis files:</p>
+            <div class="file-list" id="fileList">
+                <p>Loading files...</p>
+            </div>
+            <script>
+                fetch('.')
+                    .then(response => response.text())
+                    .then(html => {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        const links = doc.querySelectorAll('a');
+                        const fileList = document.getElementById('fileList');
+                        fileList.innerHTML = '';
+                        
+                        links.forEach(link => {
+                            const href = link.getAttribute('href');
+                            if (href && (href.endsWith('.json') || href.endsWith('.tid') || href.endsWith('.html'))) {
+                                const fileItem = document.createElement('div');
+                                fileItem.className = 'file-item';
+                                fileItem.innerHTML = '<a href="' + href + '">' + href + '</a>';
+                                fileList.appendChild(fileItem);
+                            }
+                        });
+                        
+                        if (fileList.children.length === 0) {
+                            fileList.innerHTML = '<p>No analysis files found.</p>';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error loading file list:', error);
+                        document.getElementById('fileList').innerHTML = '<p>Error loading file list.</p>';
+                    });
+            </script>
+        </body>
+        </html>
+        "@
+          Set-Content -Path "docs\index.html" -Value $htmlContent -Encoding UTF8
         }
         
         # List all files in docs directory
