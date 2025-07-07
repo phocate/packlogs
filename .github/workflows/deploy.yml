@@ -76,11 +76,23 @@ jobs:
         run: |
           Write-Host "=== ELITE INSIGHTS PROCESSING ==="
           
-          $cliExists = Test-Path "EliteInsights\GuildWars2EliteInsights-CLI.exe"
-          Write-Host "CLI exists: $cliExists"
+          Write-Host "Checking Elite Insights directory structure:"
+          Get-ChildItem "EliteInsights" -Recurse | Where-Object { $_.Name -like "*Elite*" } | Format-Table Name, FullName
           
-          if (-not $cliExists) {
-            Write-Host "##[error]Elite Insights CLI not found"
+          $cliPath = Get-ChildItem "EliteInsights" -Recurse -Filter "*CLI*" | Select-Object -First 1
+          $guiPath = Get-ChildItem "EliteInsights" -Recurse -Filter "GuildWars2EliteInsights.exe" | Select-Object -First 1
+          
+          Write-Host "CLI found: $($cliPath -ne $null)"
+          Write-Host "GUI found: $($guiPath -ne $null)"
+          
+          if ($cliPath) {
+            Write-Host "Using CLI: $($cliPath.FullName)"
+            $exePath = $cliPath.FullName
+          } elseif ($guiPath) {
+            Write-Host "Using GUI with command line: $($guiPath.FullName)"
+            $exePath = $guiPath.FullName
+          } else {
+            Write-Host "##[error]No Elite Insights executable found"
             exit 1
           }
           
@@ -90,10 +102,10 @@ jobs:
           if ($configExists) {
             Write-Host "Using custom EI configuration"
             Copy-Item "parser\EI_config\EI_detailed_json_combat_replay.conf" -Destination "ei_config.conf"
-            & "EliteInsights\GuildWars2EliteInsights-CLI.exe" -c "ei_config.conf" -p "logs\" -o "processed_logs\"
+            & $exePath -c "ei_config.conf" -p "logs\" -o "processed_logs\"
           } else {
             Write-Host "Using default EI settings"
-            & "EliteInsights\GuildWars2EliteInsights-CLI.exe" -p "logs\" -o "processed_logs\" --save-output-file json
+            & $exePath -p "logs\" -o "processed_logs\" --save-output-file json
           }
           
           Write-Host "Elite Insights processing completed"
