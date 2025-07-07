@@ -183,11 +183,8 @@ jobs:
           Write-Host "=== GUILD DATA SETUP ==="
           Write-Host "Creating Guild_Data.py"
           
-          $guildDataContent = @"
-Guild_ID = ''
-API_Key = ''
-"@
-          $guildDataContent | Out-File -FilePath "parser\Guild_Data.py" -Encoding utf8
+          "Guild_ID = ''" | Out-File -FilePath "parser\Guild_Data.py" -Encoding utf8
+          "API_Key = ''" | Out-File -FilePath "parser\Guild_Data.py" -Encoding utf8 -Append
           
           Write-Host "Guild_Data.py created successfully"
           Get-Content "parser\Guild_Data.py"
@@ -244,23 +241,23 @@ API_Key = ''
             
           } else {
             Write-Host "No JSON files found, creating placeholder content..."
-            $placeholderContent = @"
-title: PlaceholderStats
-tags: WvWStats
-type: text/vnd.tiddlywiki
-
-!! No Combat Logs Found
-
-No .evtc or .zevtc files were found in the logs directory. 
-
-To use this system:
-# Add your Guild Wars 2 combat log files (.evtc or .zevtc) to the `logs/` directory
-# Commit and push the changes
-# The GitHub Action will automatically process them and update this page
-
-Current status: Waiting for log files...
-"@
-            $placeholderContent | Out-File -FilePath "..\tiddlers\placeholder.tid" -Encoding utf8
+            $lines = @(
+              'title: PlaceholderStats',
+              'tags: WvWStats', 
+              'type: text/vnd.tiddlywiki',
+              '',
+              '!! No Combat Logs Found',
+              '',
+              'No .evtc or .zevtc files were found in the logs directory.',
+              '',
+              'To use this system:',
+              '# Add your Guild Wars 2 combat log files (.evtc or .zevtc) to the `logs/` directory',
+              '# Commit and push the changes', 
+              '# The GitHub Action will automatically process them and update this page',
+              '',
+              'Current status: Waiting for log files...'
+            )
+            $lines | Out-File -FilePath "..\tiddlers\placeholder.tid" -Encoding utf8
             Write-Host "Created placeholder TID file"
           }
           
@@ -283,41 +280,41 @@ Current status: Waiting for log files...
               Get-ChildItem "parser" -Recurse -Include "*.html" | Format-Table Name, FullName
               
               Write-Host "Creating basic HTML structure..."
-              $htmlContent = @"
-<!DOCTYPE html>
-<html>
-<head>
-    <title>GW2 WvW Stats - FLUX CAPACITY</title>
-    <meta charset="utf-8">
-</head>
-<body>
-    <h1>FLUX CAPACITY - GW2 WvW Statistics</h1>
-    <h2>System Status</h2>
-    <p><strong>Status:</strong> TiddlyWiki container is working</p>
-    <p><strong>Issue:</strong> No processed log data found</p>
-    
-    <h2>Next Steps</h2>
-    <ol>
-        <li>Add .evtc or .zevtc files to the logs/ directory</li>
-        <li>Commit and push changes</li>
-        <li>Wait for GitHub Actions to process the logs</li>
-        <li>Check the Actions tab for detailed processing logs</li>
-    </ol>
-    
-    <h2>Debug Information</h2>
-    <p>If you're seeing this page, the workflow ran but either:</p>
-    <ul>
-        <li>No log files were found in the logs/ directory</li>
-        <li>Elite Insights failed to process the logs</li>
-        <li>The Python parsing script encountered an error</li>
-        <li>The TiddlyWiki template is missing</li>
-    </ul>
-    
-    <p>Check the GitHub Actions logs for detailed error information.</p>
-</body>
-</html>
-"@
-              $htmlContent | Out-File -FilePath "index.html" -Encoding utf8
+              $htmlLines = @(
+                '<!DOCTYPE html>',
+                '<html>',
+                '<head>',
+                '    <title>GW2 WvW Stats - FLUX CAPACITY</title>',
+                '    <meta charset="utf-8">',
+                '</head>',
+                '<body>',
+                '    <h1>FLUX CAPACITY - GW2 WvW Statistics</h1>',
+                '    <h2>System Status</h2>',
+                '    <p><strong>Status:</strong> TiddlyWiki container is working</p>',
+                '    <p><strong>Issue:</strong> No processed log data found</p>',
+                '    ',
+                '    <h2>Next Steps</h2>',
+                '    <ol>',
+                '        <li>Add .evtc or .zevtc files to the logs/ directory</li>',
+                '        <li>Commit and push changes</li>',
+                '        <li>Wait for GitHub Actions to process the logs</li>',
+                '        <li>Check the Actions tab for detailed processing logs</li>',
+                '    </ol>',
+                '    ',
+                '    <h2>Debug Information</h2>',
+                '    <p>If you''re seeing this page, the workflow ran but either:</p>',
+                '    <ul>',
+                '        <li>No log files were found in the logs/ directory</li>',
+                '        <li>Elite Insights failed to process the logs</li>',
+                '        <li>The Python parsing script encountered an error</li>',
+                '        <li>The TiddlyWiki template is missing</li>',
+                '    </ul>',
+                '    ',
+                '    <p>Check the GitHub Actions logs for detailed error information.</p>',
+                '</body>',
+                '</html>'
+              )
+              $htmlLines | Out-File -FilePath "index.html" -Encoding utf8
             }
           } else {
             Write-Host "index.html already exists"
