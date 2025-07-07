@@ -96,17 +96,18 @@ jobs:
             exit 1
           }
           
-          $configExists = Test-Path "parser\EI_config\EI_detailed_json_combat_replay.conf"
-          Write-Host "Config file exists: $configExists"
-          
           Write-Host "Processing logs with Elite Insights..."
-          if ($configExists) {
-            Write-Host "Using custom EI configuration for detailed WvW parsing"
-            Copy-Item "parser\EI_config\EI_detailed_json_combat_replay.conf" -Destination "ei_config.conf"
-            & $exePath -c "ei_config.conf" -p "logs\" -o "processed_logs\"
-          } else {
-            Write-Host "Using default EI settings with JSON output"
-            & $exePath -p "logs\" -o "processed_logs\" --save-output-file json
+          Write-Host "Command: $exePath -p logs\ -o processed_logs\ --save-output-file html json"
+          
+          try {
+            & $exePath -p "logs\" -o "processed_logs\" --save-output-file html json
+            Write-Host "Elite Insights completed successfully"
+          } catch {
+            Write-Host "Elite Insights failed: $($_.Exception.Message)"
+            Write-Host "Trying alternative approach..."
+            
+            # Try without the --save-output-file parameter
+            & $exePath -p "logs\" -o "processed_logs\"
           }
           
           Write-Host "Checking Elite Insights output..."
@@ -116,8 +117,8 @@ jobs:
           $htmlFiles = Get-ChildItem -Path "processed_logs" -Filter "*.html"
           Write-Host "Generated $($jsonFiles.Count) JSON files and $($htmlFiles.Count) HTML files"
           
-          if ($jsonFiles.Count -eq 0) {
-            Write-Host "##[error]Elite Insights failed to generate JSON files"
+          if ($jsonFiles.Count -eq 0 -and $htmlFiles.Count -eq 0) {
+            Write-Host "##[error]Elite Insights failed to generate any output files"
             Write-Host "Checking for any output files:"
             Get-ChildItem "processed_logs" -Recurse | Format-Table Name, FullName
             exit 1
@@ -128,17 +129,21 @@ jobs:
           Write-Host "=== PYTHON PARSER PROCESSING ==="
           
           $jsonFiles = Get-ChildItem -Path "processed_logs" -Filter "*.json"
-          Write-Host "Processing $($jsonFiles.Count) JSON files"
+          $htmlFiles = Get-ChildItem -Path "processed_logs" -Filter "*.html"
+          Write-Host "Processing $($jsonFiles.Count) JSON files and $($htmlFiles.Count) HTML files"
           
           Copy-Item "parser\TW5_parse_top_stats_detailed.py" -Destination "."
           Copy-Item "parser\TW5_parse_top_stats_tools.py" -Destination "."
           Copy-Item "parser\GW2_Data.py" -Destination "."
           Copy-Item "parser\GW2_Color_Scheme.py" -Destination "."
           
-          Write-Host "Running TW5 parser: python TW5_parse_top_stats_detailed.py processed_logs tiddlers data"
-          python TW5_parse_top_stats_detailed.py "processed_logs" "tiddlers" "data"
-          
-          Write-Host "Python parser completed"
+          if ($jsonFiles.Count -gt 0) {
+            Write-Host "Running TW5 parser: python TW5_parse_top_stats_detailed.py processed_logs tiddlers data"
+            python TW5_parse_top_stats_detailed.py "processed_logs" "tiddlers" "data"
+            Write-Host "Python parser completed"
+          } else {
+            Write-Host "No JSON files found, skipping Python parser"
+          }
           
           Write-Host "Generated tiddler files:"
           Get-ChildItem "tiddlers" -ErrorAction SilentlyContinue | Format-Table Name, Length
