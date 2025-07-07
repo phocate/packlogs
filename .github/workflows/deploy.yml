@@ -1,4 +1,3 @@
-
 name: Process Logs and Deploy TiddlyWiki
 
 on:
@@ -50,211 +49,107 @@ jobs:
           Invoke-WebRequest -Uri "https://github.com/baaron4/GW2-Elite-Insights-Parser/releases/latest/download/GW2EI.zip" -OutFile "ei.zip"
           Expand-Archive -Path "ei.zip" -DestinationPath "EliteInsights"
           
-          Write-Host "Elite Insights contents:"
-          Get-ChildItem "EliteInsights" -Recurse | Format-Table Name, Length
-          
       - name: Download arcdps parser scripts
         run: |
           Write-Host "Cloning parser repository..."
           git clone https://github.com/Drevarr/arcdps_top_stats_parser.git parser/
           
-          Write-Host "Parser repository contents:"
-          Get-ChildItem "parser" | Format-Table Name
-          
-      - name: Create directories and verify structure
+      - name: Create directories
         run: |
           New-Item -ItemType Directory -Force -Path "processed_logs"
           New-Item -ItemType Directory -Force -Path "tiddlers"
           New-Item -ItemType Directory -Force -Path "data"
           
-          Write-Host "Repository structure:"
-          Get-ChildItem -Recurse -Depth 2 | Where-Object { $_.PSIsContainer } | Format-Table Name, FullName
-          
       - name: Check for log files
         run: |
           Write-Host "=== LOG FILE ANALYSIS ==="
-          if (Test-Path "logs") {
-            Write-Host "Logs directory exists"
-            $allFiles = Get-ChildItem -Path "logs" -Recurse -ErrorAction SilentlyContinue
-            Write-Host "All files in logs directory:"
-            $allFiles | Format-Table Name, Length, Extension, LastWriteTime
-            
-            $logFiles = Get-ChildItem -Path "logs" -Include "*.evtc", "*.zevtc" -Recurse -ErrorAction SilentlyContinue
-            Write-Host "Found $($logFiles.Count) log files:"
-            $logFiles | Format-Table Name, Length, Extension
-          } else {
-            Write-Host "Logs directory does not exist"
-            Write-Host "Creating empty logs directory for testing..."
-            New-Item -ItemType Directory -Force -Path "logs"
+          $logFiles = Get-ChildItem -Path "logs" -Include "*.evtc", "*.zevtc" -Recurse -ErrorAction SilentlyContinue
+          Write-Host "Found $($logFiles.Count) log files:"
+          $logFiles | Format-Table Name, Length, Extension
+          
+          if ($logFiles.Count -eq 0) {
+            Write-Host "##[error]No log files found in logs directory"
+            exit 1
           }
           
       - name: Process EVTC logs with Elite Insights
         run: |
           Write-Host "=== ELITE INSIGHTS PROCESSING ==="
           
-          $LOG_COUNT = 0
-          if (Test-Path "logs") {
-            $LOG_COUNT = (Get-ChildItem -Path "logs" -Include "*.evtc", "*.zevtc" -Recurse -ErrorAction SilentlyContinue).Count
-          }
-          Write-Host "Found $LOG_COUNT log files"
-          
-          # Check for executables
           $cliExists = Test-Path "EliteInsights\GuildWars2EliteInsights-CLI.exe"
-          $guiExists = Test-Path "EliteInsights\GuildWars2EliteInsights.exe"
           Write-Host "CLI exists: $cliExists"
-          Write-Host "GUI exists: $guiExists"
           
-          if ($LOG_COUNT -gt 0) {
-            Write-Host "Processing $LOG_COUNT log files..."
-            
-            $configExists = Test-Path "parser\EI_config\EI_detailed_json_combat_replay.conf"
-            Write-Host "Config file exists: $configExists"
-            
-            try {
-              if ($configExists) {
-                Write-Host "Using custom EI configuration"
-                Copy-Item "parser\EI_config\EI_detailed_json_combat_replay.conf" -Destination "ei_config.conf"
-                
-                if ($cliExists) {
-                  Write-Host "Running CLI with custom config..."
-                  & "EliteInsights\GuildWars2EliteInsights-CLI.exe" -c "ei_config.conf" -p "logs\" -o "processed_logs\"
-                } elseif ($guiExists) {
-                  Write-Host "Running GUI with custom config..."
-                  & "EliteInsights\GuildWars2EliteInsights.exe" -c "ei_config.conf" -p "logs\" -o "processed_logs\"
-                } else {
-                  Write-Error "No Elite Insights executable found"
-                  throw "No executable found"
-                }
-              } else {
-                Write-Host "Using default EI settings"
-                
-                if ($cliExists) {
-                  Write-Host "Running CLI with default settings..."
-                  & "EliteInsights\GuildWars2EliteInsights-CLI.exe" -p "logs\" -o "processed_logs\" --save-output-file json
-                } elseif ($guiExists) {
-                  Write-Host "Running GUI with default settings..."
-                  & "EliteInsights\GuildWars2EliteInsights.exe" -p "logs\" -o "processed_logs\" --save-output-file json
-                } else {
-                  Write-Error "No Elite Insights executable found"
-                  throw "No executable found"
-                }
-              }
-              
-              Write-Host "Elite Insights processing completed"
-              
-            } catch {
-              Write-Host "Elite Insights processing failed: $($_.Exception.Message)"
-              Write-Host "Creating dummy JSON for testing..."
-              $dummyJson = @{
-                fightName = "Test Fight"
-                success = $true
-                players = @(
-                  @{
-                    name = "Test Player"
-                    profession = "Guardian"
-                    dpsAll = @{ "damage" = 50000 }
-                  }
-                )
-              }
-              $dummyJson | ConvertTo-Json -Depth 10 | Out-File -FilePath "processed_logs\test_log.json" -Encoding utf8
-            }
-          } else {
-            Write-Host "No log files found, creating test data for development..."
-            $testJson = @{
-              fightName = "Development Test"
-              success = $true
-              players = @(
-                @{
-                  name = "Dev Player"
-                  profession = "Warrior"
-                  dpsAll = @{ "damage" = 25000 }
-                }
-              )
-            }
-            $testJson | ConvertTo-Json -Depth 10 | Out-File -FilePath "processed_logs\dev_test.json" -Encoding utf8
+          if (-not $cliExists) {
+            Write-Host "##[error]Elite Insights CLI not found"
+            exit 1
           }
+          
+          $configExists = Test-Path "parser\EI_config\EI_detailed_json_combat_replay.conf"
+          Write-Host "Config file exists: $configExists"
+          
+          if ($configExists) {
+            Write-Host "Using custom EI configuration"
+            Copy-Item "parser\EI_config\EI_detailed_json_combat_replay.conf" -Destination "ei_config.conf"
+            & "EliteInsights\GuildWars2EliteInsights-CLI.exe" -c "ei_config.conf" -p "logs\" -o "processed_logs\"
+          } else {
+            Write-Host "Using default EI settings"
+            & "EliteInsights\GuildWars2EliteInsights-CLI.exe" -p "logs\" -o "processed_logs\" --save-output-file json
+          }
+          
+          Write-Host "Elite Insights processing completed"
+          
+          $jsonFiles = Get-ChildItem -Path "processed_logs" -Filter "*.json"
+          Write-Host "Generated $($jsonFiles.Count) JSON files"
           
       - name: Process logs with Python parser
         run: |
           Write-Host "=== PYTHON PARSER PROCESSING ==="
           
-          # Check if we have processed JSON files
-          $jsonFiles = Get-ChildItem -Path "processed_logs" -Filter "*.json" -ErrorAction SilentlyContinue
-          Write-Host "Found $($jsonFiles.Count) JSON files to process"
+          $jsonFiles = Get-ChildItem -Path "processed_logs" -Filter "*.json"
+          Write-Host "Processing $($jsonFiles.Count) JSON files"
           
-          if ($jsonFiles.Count -gt 0) {
-            try {
-              Write-Host "Running TiddlyWiki parser..."
-              
-              # Copy parser files to working directory
-              Copy-Item "parser\TW5_parse_top_stats_detailed.py" -Destination "."
-              Copy-Item "parser\TW5_parse_top_stats_tools.py" -Destination "."
-              Copy-Item "parser\GW2_Data.py" -Destination "."
-              Copy-Item "parser\GW2_Color_Scheme.py" -Destination "."
-              
-              # Run the parser
-              python TW5_parse_top_stats_detailed.py "processed_logs" "tiddlers" "data"
-              
-              Write-Host "Python parser completed successfully"
-              
-              # List generated files
-              Write-Host "Generated tiddler files:"
-              Get-ChildItem "tiddlers" -ErrorAction SilentlyContinue | Format-Table Name, Length
-              
-              Write-Host "Generated data files:"
-              Get-ChildItem "data" -ErrorAction SilentlyContinue | Format-Table Name, Length
-              
-            } catch {
-              Write-Host "Python parser failed: $($_.Exception.Message)"
-              Write-Host "Creating basic tiddler for testing..."
-              
-              # Create a basic test tiddler
-              $testTiddler = @"
-created: $(Get-Date -Format "yyyyMMddHHmmssfff")
-modified: $(Get-Date -Format "yyyyMMddHHmmssfff")
-tags: Fight
-title: Test Fight
-type: text/vnd.tiddlywiki
-
-!! Test Fight Data
-
-This is a test fight generated during the build process.
-
-* **Fight Name:** Test Fight
-* **Status:** Success
-* **Players:** 1
-
-"@
-              $testTiddler | Out-File -FilePath "tiddlers\test-fight.tid" -Encoding utf8
-              
-              # Create basic data file
-              $testData = @{
-                fights = @(
-                  @{
-                    name = "Test Fight"
-                    success = $true
-                    duration = "5:30"
-                    players = 1
-                  }
-                )
-              }
-              $testData | ConvertTo-Json -Depth 10 | Out-File -FilePath "data\fights.json" -Encoding utf8
-            }
-          } else {
-            Write-Host "No JSON files found, skipping parser"
+          if ($jsonFiles.Count -eq 0) {
+            Write-Host "##[error]No JSON files found from Elite Insights processing"
+            exit 1
           }
           
-      - name: Create TiddlyWiki HTML file
+          Copy-Item "parser\TW5_parse_top_stats_detailed.py" -Destination "."
+          Copy-Item "parser\TW5_parse_top_stats_tools.py" -Destination "."
+          Copy-Item "parser\GW2_Data.py" -Destination "."
+          Copy-Item "parser\GW2_Color_Scheme.py" -Destination "."
+          
+          python TW5_parse_top_stats_detailed.py "processed_logs" "tiddlers" "data"
+          
+          Write-Host "Python parser completed"
+          
+          Write-Host "Generated tiddler files:"
+          Get-ChildItem "tiddlers" -ErrorAction SilentlyContinue | Format-Table Name, Length
+          
+          Write-Host "Generated data files:"
+          Get-ChildItem "data" -ErrorAction SilentlyContinue | Format-Table Name, Length
+          
+      - name: Verify TiddlyWiki output
         run: |
-          Write-Host "=== CREATING TIDDLYWIKI HTML ==="
+          Write-Host "=== VERIFYING OUTPUT ==="
           
-          # Download TiddlyWiki empty.html if index.html doesn't exist
-          if (-not (Test-Path "index.html")) {
-            Write-Host "Downloading TiddlyWiki empty.html..."
-            Invoke-WebRequest -Uri "https://tiddlywiki.com/empty.html" -OutFile "index.html"
+          $htmlFiles = Get-ChildItem -Filter "*.html"
+          Write-Host "HTML files found:"
+          $htmlFiles | Format-Table Name, Length
+          
+          $tiddlerFiles = Get-ChildItem "tiddlers" -Filter "*.tid" -ErrorAction SilentlyContinue
+          Write-Host "Tiddler files: $($tiddlerFiles.Count)"
+          
+          if ($htmlFiles.Count -eq 0) {
+            Write-Host "##[error]No HTML file generated"
+            exit 1
           }
           
-          Write-Host "TiddlyWiki HTML file ready"
+          if ($tiddlerFiles.Count -eq 0) {
+            Write-Host "##[error]No tiddler files generated"
+            exit 1
+          }
+          
+          Write-Host "TiddlyWiki ready for deployment"
           
       - name: Setup Pages
         uses: actions/configure-pages@v3
@@ -267,4 +162,3 @@ This is a test fight generated during the build process.
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v2
-
