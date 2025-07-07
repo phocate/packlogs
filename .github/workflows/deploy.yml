@@ -88,39 +88,87 @@ jobs:
           if ($cliPath) {
             Write-Host "Using CLI: $($cliPath.FullName)"
             $exePath = $cliPath.FullName
+            $useGui = $false
           } elseif ($guiPath) {
             Write-Host "Using GUI with command line: $($guiPath.FullName)"
             $exePath = $guiPath.FullName
+            $useGui = $true
           } else {
             Write-Host "##[error]No Elite Insights executable found"
             exit 1
           }
           
           Write-Host "Processing logs with Elite Insights..."
-          Write-Host "Command: $exePath -p logs\ -o processed_logs\ --save-output-file html json"
           
-          try {
-            & $exePath -p "logs\" -o "processed_logs\" --save-output-file html json
-            Write-Host "Elite Insights completed successfully"
-          } catch {
-            Write-Host "Elite Insights failed: $($_.Exception.Message)"
-            Write-Host "Trying alternative approach..."
+          if ($useGui) {
+            Write-Host "Note: GUI version may ignore output directory parameter"
+            Write-Host "Command: $exePath logs/*.zevtc"
             
-            # Try without the --save-output-file parameter
-            & $exePath -p "logs\" -o "processed_logs\"
+            # GUI version: just pass the log files directly
+            $logFiles = Get-ChildItem "logs" -Include "*.evtc", "*.zevtc" -Recurse
+            foreach ($logFile in $logFiles) {
+              Write-Host "Processing: $($logFile.Name)"
+              & $exePath $logFile.FullName
+            }
+          } else {
+            Write-Host "Command: $exePath -p logs\ -o processed_logs\ --save-output-file html json"
+            & $exePath -p "logs\" -o "processed_logs\" --save-output-file html json
           }
           
-          Write-Host "Checking Elite Insights output..."
-          Get-ChildItem "processed_logs" | Format-Table Name, Length, Extension
+          Write-Host "Elite Insights processing completed"
           
-          $jsonFiles = Get-ChildItem -Path "processed_logs" -Filter "*.json"
-          $htmlFiles = Get-ChildItem -Path "processed_logs" -Filter "*.html"
-          Write-Host "Generated $($jsonFiles.Count) JSON files and $($htmlFiles.Count) HTML files"
+          Write-Host "Checking for output files in multiple locations..."
           
-          if ($jsonFiles.Count -eq 0 -and $htmlFiles.Count -eq 0) {
+          # Check processed_logs directory
+          Write-Host "Files in processed_logs:"
+          Get-ChildItem "processed_logs" -ErrorAction SilentlyContinue | Format-Table Name, Length, Extension
+          
+          # Check logs directory (GUI might output here)
+          Write-Host "Files in logs directory:"
+          Get-ChildItem "logs" -Filter "*.json" -ErrorAction SilentlyContinue | Format-Table Name, Length, Extension
+          Get-ChildItem "logs" -Filter "*.html" -ErrorAction SilentlyContinue | Format-Table Name, Length, Extension
+          
+          # Check current directory
+          Write-Host "JSON/HTML files in current directory:"
+          Get-ChildItem -Filter "*.json" -ErrorAction SilentlyContinue | Format-Table Name, Length, Extension
+          Get-ChildItem -Filter "*.html" -ErrorAction SilentlyContinue | Format-Table Name, Length, Extension
+          
+          # Collect all generated files
+          $allJsonFiles = @()
+          $allHtmlFiles = @()
+          
+          $allJsonFiles += Get-ChildItem "processed_logs" -Filter "*.json" -ErrorAction SilentlyContinue
+          $allJsonFiles += Get-ChildItem "logs" -Filter "*.json" -ErrorAction SilentlyContinue
+          $allJsonFiles += Get-ChildItem -Filter "*.json" -ErrorAction SilentlyContinue
+          
+          $allHtmlFiles += Get-ChildItem "processed_logs" -Filter "*.html" -ErrorAction SilentlyContinue
+          $allHtmlFiles += Get-ChildItem "logs" -Filter "*.html" -ErrorAction SilentlyContinue
+          $allHtmlFiles += Get-ChildItem -Filter "*.html" -ErrorAction SilentlyContinue
+          
+          Write-Host "Total found: $($allJsonFiles.Count) JSON files and $($allHtmlFiles.Count) HTML files"
+          
+          # Move all output files to processed_logs directory
+          if ($allJsonFiles.Count -gt 0 -or $allHtmlFiles.Count -gt 0) {
+            Write-Host "Moving output files to processed_logs directory..."
+            
+            foreach ($file in $allJsonFiles) {
+              if ($file.DirectoryName -ne (Resolve-Path "processed_logs").Path) {
+                Write-Host "Moving JSON: $($file.Name)"
+                Move-Item $file.FullName "processed_logs\" -Force
+              }
+            }
+            
+            foreach ($file in $allHtmlFiles) {
+              if ($file.DirectoryName -ne (Resolve-Path "processed_logs").Path) {
+                Write-Host "Moving HTML: $($file.Name)"
+                Move-Item $file.FullName "processed_logs\" -Force
+              }
+            }
+            
+            Write-Host "Final processed_logs contents:"
+            Get-ChildItem "processed_logs" | Format-Table Name, Length, Extension
+          } else {
             Write-Host "##[error]Elite Insights failed to generate any output files"
-            Write-Host "Checking for any output files:"
-            Get-ChildItem "processed_logs" -Recurse | Format-Table Name, FullName
             exit 1
           }
           
