@@ -21,6 +21,7 @@ concurrency:
 jobs:
   process-logs:
     runs-on: windows-latest
+    
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -28,196 +29,162 @@ jobs:
         fetch-depth: 0
 
     - name: Setup .NET
-      uses: actions/setup-dotnet@v3
+      uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '6.0.x'
 
     - name: Setup Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5
       with:
         python-version: '3.11'
 
     - name: Install Python dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install requests pathlib configparser
+        pip install requests pathlib configparser pandas matplotlib seaborn plotly
 
     - name: Create working directories
       run: |
-        mkdir prerequisites
-        mkdir ei_output
-        mkdir combined_output
-        mkdir docs
+        New-Item -ItemType Directory -Path "prerequisites" -Force
+        New-Item -ItemType Directory -Path "ei_output" -Force  
+        New-Item -ItemType Directory -Path "combined_output" -Force
+        New-Item -ItemType Directory -Path "docs" -Force
 
     - name: Download Elite Insights Parser
-      shell: powershell
       run: |
-        cd prerequisites
+        Set-Location "prerequisites"
         Write-Host "Downloading Elite Insights Parser..."
         Invoke-WebRequest -Uri "https://github.com/baaron4/GW2-Elite-Insights-Parser/releases/latest/download/GW2EICLI.zip" -OutFile "GW2EICLI.zip"
-        Expand-Archive -Path "GW2EICLI.zip" -DestinationPath "."
-        Get-ChildItem -Path "GW2EICLI" -Recurse
+        Expand-Archive -Path "GW2EICLI.zip" -DestinationPath "." -Force
+        Get-ChildItem -Path "GW2EICLI" -Recurse | Select-Object Name, Length
 
-    - name: Download GW2 EI Log Combiner (Old Parser)
-      shell: powershell
+    - name: Download Old Parser (arcdps_top_stats_parser)
       run: |
-        cd prerequisites
-        Write-Host "Downloading GW2 EI Log Combiner (Old Parser)..."
-        Invoke-WebRequest -Uri "https://github.com/Drevarr/arcdps_top_stats_parser/archive/refs/heads/main.zip" -OutFile "arcdps_top_stats_parser.zip"
-        Expand-Archive -Path "arcdps_top_stats_parser.zip" -DestinationPath "."
-        Move-Item -Path "arcdps_top_stats_parser-main" -Destination "arcdps_top_stats_parser"
-        Get-ChildItem -Path "arcdps_top_stats_parser" -Recurse
+        Set-Location "prerequisites"
+        Write-Host "Downloading Old Parser..."
+        Invoke-WebRequest -Uri "https://github.com/Drevarr/arcdps_top_stats_parser/archive/refs/heads/main.zip" -OutFile "parser.zip"
+        Expand-Archive -Path "parser.zip" -DestinationPath "." -Force
+        Move-Item -Path "arcdps_top_stats_parser-main" -Destination "arcdps_top_stats_parser" -Force
+        Get-ChildItem -Path "arcdps_top_stats_parser" | Select-Object Name
 
-    - name: Process logs with Elite Insights
-      shell: powershell
+    - name: Setup Python environment for old parser
       run: |
-        if (Test-Path "logs" -and (Get-ChildItem -Path "logs\*.zevtc" -ErrorAction SilentlyContinue)) {
-          Write-Host "Processing logs with Elite Insights..."
-          
-          # Copy config file
-          Copy-Item -Path "config\EliteInsightsConfig.conf" -Destination "prerequisites\GW2EICLI\"
-          
-          # Process each log file
-          Get-ChildItem -Path "logs\*.zevtc" | ForEach-Object {
-            Write-Host "Processing: $($_.FullName)"
-            try {
-              & "prerequisites\GW2EICLI\GuildWars2EliteInsights.exe" -c "prerequisites\GW2EICLI\EliteInsightsConfig.conf" -p $_.FullName
-            }
-            catch {
-              Write-Host "Failed to process $($_.FullName): $_"
-            }
-          }
-          
-          # List output files
-          Write-Host "Elite Insights output:"
-          if (Test-Path "ei_output") {
-            Get-ChildItem -Path "ei_output" -Recurse
-          } else {
-            Write-Host "No ei_output directory found"
-          }
-        } else {
-          Write-Host "No log files found in logs/ directory"
-        }
-
-    - name: Setup Python environment for log combiner
-      shell: powershell
-      run: |
-        cd prerequisites\arcdps_top_stats_parser
+        Set-Location "prerequisites\arcdps_top_stats_parser"
         if (Test-Path "requirements.txt") {
           pip install -r requirements.txt
-        } else {
-          pip install pandas matplotlib seaborn plotly
         }
 
-    - name: Combine logs with old parser
-      shell: powershell
+    - name: Process logs with Elite Insights
       run: |
-        if ((Test-Path "ei_output") -and (Get-ChildItem -Path "ei_output\*.json" -ErrorAction SilentlyContinue)) {
-          Write-Host "Combining logs with old parser..."
-          cd prerequisites\arcdps_top_stats_parser
+        $logFiles = Get-ChildItem -Path "logs\*.zevtc" -ErrorAction SilentlyContinue
+        if ($logFiles) {
+          Write-Host "Found $($logFiles.Count) log files to process"
           
-          # Copy our config file
-          Copy-Item -Path "..\..\config\top_stats_config.ini" -Destination "."
+          # Copy config file to Elite Insights directory
+          Copy-Item -Path "config\EliteInsightsConfig.conf" -Destination "prerequisites\GW2EICLI\" -Force
           
-          # Update config to point to our ei_output directory (PowerShell approach)
-          $configContent = Get-Content "top_stats_config.ini" -Raw
-          $configContent = $configContent -replace 'input_directory = .*', 'input_directory = ../../ei_output'
-          Set-Content "top_stats_config.ini" -Value $configContent
-          
-          # Run the parser
-          python top_stats_parser.py
-          
-          # Copy results to our output directory
-          if (Test-Path "output") {
-            Copy-Item -Path "output\*" -Destination "..\..\combined_output\" -Recurse -Force
-          } else {
-            Write-Host "No output files to copy"
+          # Process each log file
+          foreach ($logFile in $logFiles) {
+            Write-Host "Processing: $($logFile.Name)"
+            try {
+              $process = Start-Process -FilePath "prerequisites\GW2EICLI\GuildWars2EliteInsights.exe" -ArgumentList "-c", "prerequisites\GW2EICLI\EliteInsightsConfig.conf", "-p", $logFile.FullName -Wait -PassThru -NoNewWindow
+              if ($process.ExitCode -ne 0) {
+                Write-Warning "Elite Insights returned exit code $($process.ExitCode) for $($logFile.Name)"
+              }
+            }
+            catch {
+              Write-Error "Failed to process $($logFile.Name): $($_.Exception.Message)"
+            }
           }
           
-          Write-Host "Combined output:"
-          Get-ChildItem -Path "..\..\combined_output\" -Recurse
+          # Check output
+          $outputFiles = Get-ChildItem -Path "ei_output" -ErrorAction SilentlyContinue
+          if ($outputFiles) {
+            Write-Host "Elite Insights generated $($outputFiles.Count) output files"
+            $outputFiles | ForEach-Object { Write-Host "  - $($_.Name)" }
+          } else {
+            Write-Warning "No output files generated by Elite Insights"
+          }
+        } else {
+          Write-Host "No .zevtc files found in logs directory"
+        }
+
+    - name: Run old parser on Elite Insights output
+      run: |
+        $jsonFiles = Get-ChildItem -Path "ei_output\*.json" -ErrorAction SilentlyContinue
+        if ($jsonFiles) {
+          Write-Host "Running old parser on $($jsonFiles.Count) JSON files"
+          Set-Location "prerequisites\arcdps_top_stats_parser"
+          
+          # Copy and modify config
+          Copy-Item -Path "..\..\config\top_stats_config.ini" -Destination "." -Force
+          
+          # Update input directory path in config
+          $configContent = Get-Content "top_stats_config.ini" -Raw
+          $configContent = $configContent -replace 'input_directory = .*', 'input_directory = ../../ei_output'
+          Set-Content "top_stats_config.ini" -Value $configContent -Encoding UTF8
+          
+          # Run the parser
+          try {
+            python top_stats_parser.py
+            Write-Host "Old parser completed successfully"
+          }
+          catch {
+            Write-Error "Old parser failed: $($_.Exception.Message)"
+          }
+          
+          # Copy results to combined output
+          if (Test-Path "output") {
+            Copy-Item -Path "output\*" -Destination "..\..\combined_output\" -Recurse -Force
+            Write-Host "Results copied to combined_output directory"
+            
+            $combinedFiles = Get-ChildItem -Path "..\..\combined_output\" -Recurse
+            Write-Host "Combined output contains $($combinedFiles.Count) files:"
+            $combinedFiles | ForEach-Object { Write-Host "  - $($_.Name)" }
+          } else {
+            Write-Warning "No output directory found from old parser"
+          }
         } else {
           Write-Host "No JSON files found from Elite Insights processing"
         }
 
-    - name: Prepare GitHub Pages content
-      shell: powershell
+    - name: Copy template files to docs
       run: |
-        # Copy generated files to docs directory
+        # Copy any existing template files from repo
+        if (Test-Path "templates") {
+          Copy-Item -Path "templates\*" -Destination "docs\" -Recurse -Force
+        }
+        
+        # Copy generated analysis files
         if (Test-Path "combined_output") {
           Copy-Item -Path "combined_output\*" -Destination "docs\" -Recurse -Force
         }
-        
-        # Create a basic index.html if it doesn't exist
+
+    - name: Create index page if needed
+      run: |
         if (-not (Test-Path "docs\index.html")) {
-          @'
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>GW2 Combat Log Analysis</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .file-list { margin: 20px 0; }
-        .file-item { margin: 10px 0; }
-        .file-item a { text-decoration: none; color: #007bff; }
-        .file-item a:hover { text-decoration: underline; }
-    </style>
-</head>
-<body>
-    <h1>GW2 Combat Log Analysis</h1>
-    <p>Generated combat log analysis files:</p>
-    <div class="file-list" id="fileList">
-        <p>Loading files...</p>
-    </div>
-    <script>
-        // Auto-generate file list
-        fetch('.')
-            .then(response => response.text())
-            .then(html => {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const links = doc.querySelectorAll('a');
-                const fileList = document.getElementById('fileList');
-                fileList.innerHTML = '';
-                
-                links.forEach(link => {
-                    const href = link.getAttribute('href');
-                    if (href && (href.endsWith('.json') || href.endsWith('.tid') || href.endsWith('.html'))) {
-                        const fileItem = document.createElement('div');
-                        fileItem.className = 'file-item';
-                        fileItem.innerHTML = `<a href="${href}">${href}</a>`;
-                        fileList.appendChild(fileItem);
-                    }
-                });
-                
-                if (fileList.children.length === 0) {
-                    fileList.innerHTML = '<p>No analysis files found.</p>';
-                }
-            })
-            .catch(error => {
-                console.error('Error loading file list:', error);
-                document.getElementById('fileList').innerHTML = '<p>Error loading file list.</p>';
-            });
-    </script>
-</body>
-</html>
-'@ | Out-File -FilePath "docs\index.html" -Encoding UTF8
+          Write-Host "Creating basic index.html"
+          # Use a simple approach to avoid YAML/PowerShell string issues
+          $indexContent = Get-Content "templates\index.html" -Raw -ErrorAction SilentlyContinue
+          if (-not $indexContent) {
+            $indexContent = "<!DOCTYPE html><html><head><title>GW2 Log Analysis</title></head><body><h1>GW2 Combat Log Analysis</h1><p>Analysis files will be listed here.</p></body></html>"
+          }
+          Set-Content -Path "docs\index.html" -Value $indexContent -Encoding UTF8
         }
-        
-        # List all files in docs directory
-        Write-Host "Files in docs directory:"
-        Get-ChildItem -Path "docs" -Recurse
+
+    - name: List final output
+      run: |
+        Write-Host "Final docs directory contents:"
+        Get-ChildItem -Path "docs" -Recurse | Select-Object Name, Length, LastWriteTime
 
     - name: Setup Pages
-      uses: actions/configure-pages@v3
+      uses: actions/configure-pages@v4
 
     - name: Upload artifact
-      uses: actions/upload-pages-artifact@v2
+      uses: actions/upload-pages-artifact@v3
       with:
         path: './docs'
 
     - name: Deploy to GitHub Pages
       id: deployment
-      uses: actions/deploy-pages@v2
+      uses: actions/deploy-pages@v4
