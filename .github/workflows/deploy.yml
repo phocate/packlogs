@@ -84,16 +84,14 @@ jobs:
             echo "Processing $LOG_COUNT log files..."
             # Copy EI config if it exists in the parser repo
             if [ -f "parser/EI_config/EI_detailed_json_combat_replay.conf" ]; then
-              echo "Using custom EI configuration"
+              echo "Using custom EI configuration with CLI version"
               cp parser/EI_config/EI_detailed_json_combat_replay.conf ./ei_config.conf
-              # Try to run in console mode first, fallback to headless GUI if needed
-              dotnet EliteInsights/GuildWars2EliteInsights.exe -c ei_config.conf -p logs/ -o processed_logs/ || \
-              xvfb-run -a dotnet EliteInsights/GuildWars2EliteInsights.exe -c ei_config.conf -p logs/ -o processed_logs/
+              # Use the CLI version which doesn't require GUI frameworks
+              dotnet EliteInsights/GuildWars2EliteInsights-CLI.exe -c ei_config.conf -p logs/ -o processed_logs/
             else
-              echo "Using default EI settings"  
-              # Try console mode first, fallback to headless GUI
-              dotnet EliteInsights/GuildWars2EliteInsights.exe -p logs/ -o processed_logs/ --save-ouput-file json || \
-              xvfb-run -a dotnet EliteInsights/GuildWars2EliteInsights.exe -p logs/ -o processed_logs/ --save-ouput-file json
+              echo "Using default EI settings with CLI version"
+              # Use CLI version with default settings
+              dotnet EliteInsights/GuildWars2EliteInsights-CLI.exe -p logs/ -o processed_logs/ --save-ouput-file json
             fi
           else
             echo "No .evtc or .zevtc files found in logs directory"
