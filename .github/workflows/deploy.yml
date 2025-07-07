@@ -67,18 +67,27 @@ jobs:
           
       - name: Process EVTC logs with Elite Insights
         run: |
-          if [ -d "logs" ] && [ "$(ls -A logs/*.evtc* 2>/dev/null)" ]; then
-            echo "Processing log files..."
+          echo "Checking for log files in logs directory..."
+          ls -la logs/ || echo "logs directory not found"
+          
+          # Count log files more reliably
+          LOG_COUNT=$(find logs -name "*.evtc" -o -name "*.zevtc" 2>/dev/null | wc -l)
+          echo "Found $LOG_COUNT log files"
+          
+          if [ "$LOG_COUNT" -gt 0 ]; then
+            echo "Processing $LOG_COUNT log files..."
             # Copy EI config if it exists in the parser repo
             if [ -f "parser/EI_config/EI_detailed_json_combat_replay.conf" ]; then
+              echo "Using custom EI configuration"
               cp parser/EI_config/EI_detailed_json_combat_replay.conf ./ei_config.conf
               dotnet EliteInsights/GuildWars2EliteInsights.exe -c ei_config.conf -p logs/ -o processed_logs/
             else
+              echo "Using default EI settings"
               # Use default settings with JSON output
               dotnet EliteInsights/GuildWars2EliteInsights.exe -p logs/ -o processed_logs/ --save-ouput-file json
             fi
           else
-            echo "No .evtc files found in logs directory"
+            echo "No .evtc or .zevtc files found in logs directory"
             touch processed_logs/.gitkeep
           fi
           
@@ -160,9 +169,12 @@ jobs:
       - name: Generate deployment summary
         run: |
           echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
-          echo "- Processed logs: $(ls logs/*.evtc* 2>/dev/null | wc -l)" >> $GITHUB_STEP_SUMMARY
-          echo "- Generated JSON files: $(ls processed_logs/*.json 2>/dev/null | wc -l)" >> $GITHUB_STEP_SUMMARY
-          echo "- TID files created: $(ls tiddlers/*.tid 2>/dev/null | wc -l)" >> $GITHUB_STEP_SUMMARY
+          LOG_COUNT=$(find logs -name "*.evtc" -o -name "*.zevtc" 2>/dev/null | wc -l || echo "0")
+          JSON_COUNT=$(find processed_logs -name "*.json" 2>/dev/null | wc -l || echo "0")
+          TID_COUNT=$(find tiddlers -name "*.tid" 2>/dev/null | wc -l || echo "0")
+          echo "- Log files found: $LOG_COUNT" >> $GITHUB_STEP_SUMMARY
+          echo "- Generated JSON files: $JSON_COUNT" >> $GITHUB_STEP_SUMMARY
+          echo "- TID files created: $TID_COUNT" >> $GITHUB_STEP_SUMMARY
           echo "- Deployment time: $(date)" >> $GITHUB_STEP_SUMMARY
           
       - name: Setup Pages
