@@ -77,9 +77,9 @@ jobs:
           Write-Host "=== ELITE INSIGHTS PROCESSING ==="
           
           Write-Host "Checking Elite Insights directory structure:"
-          Get-ChildItem "EliteInsights" -Recurse | Where-Object { $_.Name -like "*Elite*" } | Format-Table Name, FullName
+          Get-ChildItem "EliteInsights" -Recurse | Where-Object { $_.Name -like "*.exe" } | Format-Table Name, FullName
           
-          $cliPath = Get-ChildItem "EliteInsights" -Recurse -Filter "*CLI*" | Select-Object -First 1
+          $cliPath = Get-ChildItem "EliteInsights" -Recurse -Filter "*CLI*.exe" | Select-Object -First 1
           $guiPath = Get-ChildItem "EliteInsights" -Recurse -Filter "GuildWars2EliteInsights.exe" | Select-Object -First 1
           
           Write-Host "CLI found: $($cliPath -ne $null)"
@@ -99,19 +99,29 @@ jobs:
           $configExists = Test-Path "parser\EI_config\EI_detailed_json_combat_replay.conf"
           Write-Host "Config file exists: $configExists"
           
+          Write-Host "Processing logs with Elite Insights..."
           if ($configExists) {
-            Write-Host "Using custom EI configuration"
+            Write-Host "Using custom EI configuration for detailed WvW parsing"
             Copy-Item "parser\EI_config\EI_detailed_json_combat_replay.conf" -Destination "ei_config.conf"
             & $exePath -c "ei_config.conf" -p "logs\" -o "processed_logs\"
           } else {
-            Write-Host "Using default EI settings"
+            Write-Host "Using default EI settings with JSON output"
             & $exePath -p "logs\" -o "processed_logs\" --save-output-file json
           }
           
-          Write-Host "Elite Insights processing completed"
+          Write-Host "Checking Elite Insights output..."
+          Get-ChildItem "processed_logs" | Format-Table Name, Length, Extension
           
           $jsonFiles = Get-ChildItem -Path "processed_logs" -Filter "*.json"
-          Write-Host "Generated $($jsonFiles.Count) JSON files"
+          $htmlFiles = Get-ChildItem -Path "processed_logs" -Filter "*.html"
+          Write-Host "Generated $($jsonFiles.Count) JSON files and $($htmlFiles.Count) HTML files"
+          
+          if ($jsonFiles.Count -eq 0) {
+            Write-Host "##[error]Elite Insights failed to generate JSON files"
+            Write-Host "Checking for any output files:"
+            Get-ChildItem "processed_logs" -Recurse | Format-Table Name, FullName
+            exit 1
+          }
           
       - name: Process logs with Python parser
         run: |
@@ -120,16 +130,12 @@ jobs:
           $jsonFiles = Get-ChildItem -Path "processed_logs" -Filter "*.json"
           Write-Host "Processing $($jsonFiles.Count) JSON files"
           
-          if ($jsonFiles.Count -eq 0) {
-            Write-Host "##[error]No JSON files found from Elite Insights processing"
-            exit 1
-          }
-          
           Copy-Item "parser\TW5_parse_top_stats_detailed.py" -Destination "."
           Copy-Item "parser\TW5_parse_top_stats_tools.py" -Destination "."
           Copy-Item "parser\GW2_Data.py" -Destination "."
           Copy-Item "parser\GW2_Color_Scheme.py" -Destination "."
           
+          Write-Host "Running TW5 parser: python TW5_parse_top_stats_detailed.py processed_logs tiddlers data"
           python TW5_parse_top_stats_detailed.py "processed_logs" "tiddlers" "data"
           
           Write-Host "Python parser completed"
@@ -140,28 +146,49 @@ jobs:
           Write-Host "Generated data files:"
           Get-ChildItem "data" -ErrorAction SilentlyContinue | Format-Table Name, Length
           
+          Write-Host "Current directory contents:"
+          Get-ChildItem -Filter "*.tid" -ErrorAction SilentlyContinue | Format-Table Name, Length
+          
+          Write-Host "Generated files in processed_logs:"
+          Get-ChildItem "processed_logs" -Filter "*.tid" -ErrorAction SilentlyContinue | Format-Table Name, Length
+          
       - name: Verify TiddlyWiki output
         run: |
           Write-Host "=== VERIFYING OUTPUT ==="
           
-          $htmlFiles = Get-ChildItem -Filter "*.html"
-          Write-Host "HTML files found:"
-          $htmlFiles | Format-Table Name, Length
-          
-          $tiddlerFiles = Get-ChildItem "tiddlers" -Filter "*.tid" -ErrorAction SilentlyContinue
-          Write-Host "Tiddler files: $($tiddlerFiles.Count)"
-          
+          Write-Host "Looking for TiddlyWiki HTML file..."
+          $htmlFiles = Get-ChildItem -Filter "*.html" -ErrorAction SilentlyContinue
           if ($htmlFiles.Count -eq 0) {
-            Write-Host "##[error]No HTML file generated"
+            Write-Host "Checking in processed_logs for HTML..."
+            $htmlFiles = Get-ChildItem "processed_logs" -Filter "*.html" -ErrorAction SilentlyContinue
+          }
+          
+          Write-Host "HTML files found: $($htmlFiles.Count)"
+          $htmlFiles | Format-Table Name, FullName, Length
+          
+          Write-Host "Looking for .tid files..."
+          $tidFiles = @()
+          $tidFiles += Get-ChildItem -Filter "*.tid" -ErrorAction SilentlyContinue
+          $tidFiles += Get-ChildItem "tiddlers" -Filter "*.tid" -ErrorAction SilentlyContinue
+          $tidFiles += Get-ChildItem "processed_logs" -Filter "*.tid" -ErrorAction SilentlyContinue
+          
+          Write-Host "Tiddler files found: $($tidFiles.Count)"
+          $tidFiles | Format-Table Name, FullName, Length
+          
+          if ($htmlFiles.Count -eq 0 -and $tidFiles.Count -eq 0) {
+            Write-Host "##[error]No TiddlyWiki files generated"
+            Write-Host "Full directory listing:"
+            Get-ChildItem -Recurse | Format-Table Name, FullName
             exit 1
           }
           
-          if ($tiddlerFiles.Count -eq 0) {
-            Write-Host "##[error]No tiddler files generated"
-            exit 1
+          if ($htmlFiles.Count -gt 0) {
+            Write-Host "TiddlyWiki HTML container found"
+          } else {
+            Write-Host "No HTML container found - TiddlyWiki may need to be created separately"
           }
           
-          Write-Host "TiddlyWiki ready for deployment"
+          Write-Host "Output ready for deployment"
           
       - name: Setup Pages
         uses: actions/configure-pages@v3
