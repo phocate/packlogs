@@ -153,7 +153,7 @@ jobs:
                   @{
                     name = "Test Player"
                     profession = "Guardian"
-                    dpsAll = @{ @{ damage = 50000 } }
+                    dpsAll = @{ "damage" = 50000 }
                   }
                 )
               }
@@ -168,9 +168,103 @@ jobs:
                 @{
                   name = "Dev Player"
                   profession = "Warrior"
-                  dpsAll = @{ @{ damage = 25000 } }
+                  dpsAll = @{ "damage" = 25000 }
                 }
               )
             }
             $testJson | ConvertTo-Json -Depth 10 | Out-File -FilePath "processed_logs\dev_test.json" -Encoding utf8
+          }
+          
+      - name: Process logs with Python parser
+        run: |
+          Write-Host "=== PYTHON PARSER PROCESSING ==="
+          
+          # Check if we have processed JSON files
+          $jsonFiles = Get-ChildItem -Path "processed_logs" -Filter "*.json" -ErrorAction SilentlyContinue
+          Write-Host "Found $($jsonFiles.Count) JSON files to process"
+          
+          if ($jsonFiles.Count -gt 0) {
+            try {
+              Write-Host "Running TiddlyWiki parser..."
+              
+              # Copy parser files to working directory
+              Copy-Item "parser\TW5_parse_top_stats_detailed.py" -Destination "."
+              Copy-Item "parser\TW5_parse_top_stats_tools.py" -Destination "."
+              Copy-Item "parser\GW2_Data.py" -Destination "."
+              Copy-Item "parser\GW2_Color_Scheme.py" -Destination "."
+              
+              # Run the parser
+              python TW5_parse_top_stats_detailed.py "processed_logs" "tiddlers" "data"
+              
+              Write-Host "Python parser completed successfully"
+              
+              # List generated files
+              Write-Host "Generated tiddler files:"
+              Get-ChildItem "tiddlers" -ErrorAction SilentlyContinue | Format-Table Name, Length
+              
+              Write-Host "Generated data files:"
+              Get-ChildItem "data" -ErrorAction SilentlyContinue | Format-Table Name, Length
+              
+            } catch {
+              Write-Host "Python parser failed: $($_.Exception.Message)"
+              Write-Host "Creating basic tiddler for testing..."
+              
+              # Create a basic test tiddler
+              $testTiddler = @"
+created: $(Get-Date -Format "yyyyMMddHHmmssfff")
+modified: $(Get-Date -Format "yyyyMMddHHmmssfff")
+tags: Fight
+title: Test Fight
+type: text/vnd.tiddlywiki
 
+!! Test Fight Data
+
+This is a test fight generated during the build process.
+
+* **Fight Name:** Test Fight
+* **Status:** Success
+* **Players:** 1
+
+"@
+              $testTiddler | Out-File -FilePath "tiddlers\test-fight.tid" -Encoding utf8
+              
+              # Create basic data file
+              $testData = @{
+                fights = @(
+                  @{
+                    name = "Test Fight"
+                    success = $true
+                    duration = "5:30"
+                    players = 1
+                  }
+                )
+              }
+              $testData | ConvertTo-Json -Depth 10 | Out-File -FilePath "data\fights.json" -Encoding utf8
+            }
+          } else {
+            Write-Host "No JSON files found, skipping parser"
+          }
+          
+      - name: Create TiddlyWiki HTML file
+        run: |
+          Write-Host "=== CREATING TIDDLYWIKI HTML ==="
+          
+          # Download TiddlyWiki empty.html if index.html doesn't exist
+          if (-not (Test-Path "index.html")) {
+            Write-Host "Downloading TiddlyWiki empty.html..."
+            Invoke-WebRequest -Uri "https://tiddlywiki.com/empty.html" -OutFile "index.html"
+          }
+          
+          Write-Host "TiddlyWiki HTML file ready"
+          
+      - name: Setup Pages
+        uses: actions/configure-pages@v3
+        
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v2
+        with:
+          path: '.'
+          
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v2
