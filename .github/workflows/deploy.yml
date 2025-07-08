@@ -68,7 +68,7 @@ jobs:
         Write-Host "Downloading Elite Insights Parser..."
         Invoke-WebRequest -Uri "https://github.com/baaron4/GW2-Elite-Insights-Parser/releases/latest/download/GW2EICLI.zip" -OutFile "GW2EICLI.zip"
         Expand-Archive -Path "GW2EICLI.zip" -DestinationPath "GW2EICLI" -Force
-        if (Test-Path "GW2EICLI/GuildWars2EliteInsights.exe") {
+        if (Test-Path "GW2EICLI/GuildWars2EliteInsights-CLI.exe") {
           Write-Host "Elite Insights extracted successfully"
         } else {
           Write-Error "Elite Insights executable not found after extraction"
@@ -103,7 +103,7 @@ jobs:
           return
         }
         Write-Host "Found $($logFiles.Count) log files to process"
-        $eliteInsightsExe = "prerequisites/GW2EICLI/GuildWars2EliteInsights.exe"
+        $eliteInsightsExe = "prerequisites/GW2EICLI/GuildWars2EliteInsights-CLI.exe"
         $configDestination = "prerequisites/GW2EICLI/EliteInsightsConfig.conf"
         if (-not (Test-Path $eliteInsightsExe)) {
           Write-Error "Elite Insights executable not found: $eliteInsightsExe"
