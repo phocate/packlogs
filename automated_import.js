@@ -9,7 +9,8 @@ console.log('=== Automated TiddlyWiki Import ===\n');
 const CONFIG = {
     tiddlyWikiPath: 'templates/index.html',
     tidsDirectory: 'tids',
-    outputPrefix: 'tiddlywiki_imported',
+    outputDirectory: 'docs',
+    outputPrefix: 'index', // GitHub Pages looks for index.html
     verbose: true
 };
 
@@ -17,6 +18,7 @@ const CONFIG = {
 process.argv.slice(2).forEach(arg => {
     if (arg.startsWith('--tw=')) CONFIG.tiddlyWikiPath = arg.split('=')[1];
     if (arg.startsWith('--tids=')) CONFIG.tidsDirectory = arg.split('=')[1];
+    if (arg.startsWith('--output-dir=')) CONFIG.outputDirectory = arg.split('=')[1];
     if (arg.startsWith('--output=')) CONFIG.outputPrefix = arg.split('=')[1];
     if (arg === '--quiet') CONFIG.verbose = false;
 });
@@ -173,18 +175,34 @@ async function importTiddlers() {
         }
     }
     
-    // Generate output filename
+    // Create output directory if it doesn't exist
+    if (!fs.existsSync(CONFIG.outputDirectory)) {
+        fs.mkdirSync(CONFIG.outputDirectory, { recursive: true });
+        log(`📁 Created output directory: ${CONFIG.outputDirectory}`);
+    }
+    
+    // Generate output filename - create both current and timestamped versions
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    const outputFile = `${CONFIG.outputPrefix}_${timestamp}.html`;
+    const outputFile = path.join(CONFIG.outputDirectory, `${CONFIG.outputPrefix}.html`);
+    const backupFile = path.join(CONFIG.outputDirectory, `${CONFIG.outputPrefix}_${timestamp}.html`);
+    
+    // Debug: log the paths being used
+    log(`📁 Output directory: ${CONFIG.outputDirectory}`);
+    log(`📄 Target file: ${outputFile}`);
+    log(`📄 Backup file: ${backupFile}`);
     
     // Write result
     log('💾 Writing output file...');
     fs.writeFileSync(outputFile, html);
     
+    // Also create a timestamped backup
+    fs.writeFileSync(backupFile, html);
+    
     // Success summary
     console.log('\n🎉 Import Complete!');
     console.log(`   📊 Imported: ${Object.keys(tiddlers).length} tiddlers`);
     console.log(`   📄 Output: ${outputFile}`);
+    console.log(`   📄 Backup: ${backupFile}`);
     console.log(`   📏 File size: ${(fs.statSync(outputFile).size / 1024).toFixed(1)} KB`);
     
     // Show field statistics
