@@ -1,0 +1,118 @@
+created: 20250709222041
+creator: Drevarr
+tags: ChartData
+title: 202507092220_rips_BubbleChartData
+type: text/vnd.tiddlywiki
+
+
+
+var option = {
+  dataset: [{
+    source: [
+            ["Name", "Profession", "Strips", "Control", "DPS", "color"],
+            ["Aerie Seleste", "Holosmith", 0.0007, 6485.218000000005, 1463, "#B6916D"],
+            ["Aerthan Breaker", "Spellbreaker", 0.3448, 1091.597, 92, "#FFB66D"],
+            ["Brianna De Arco", "Spellbreaker", 0.0691, 70.995, 28, "#FFB66D"],
+            ["Darkus The Black", "Scourge", 0.2847, 7969.660999999999, 148, "#6DB691"],
+            ["Dept Of Mech Engr", "Scrapper", 0.0033, 3203.11, 84, "#A77B50"],
+            ["Dorito Mt Dew Gamer", "Holosmith", 0.0, 1698.7409999999993, 295, "#B6916D"],
+            ["Dragrons Lord", "Renegade", 0.0018, 7439.817000000001, 1687, "#DA8F78"],
+            ["Etheria Lain", "Chronomancer", 0.0043, 415.812, 9, "#A750A7"],
+            ["Extenberianark", "Warrior", 0.0004, 3731.9139999999975, 1557, "#FF9933"],
+            ["Mildde", "Scrapper", 0.0018, 4068.818, 107, "#A77B50"],
+            ["Molten Halwa", "Vindicator", 0.0026, 1426.2929999999994, 24, "#E1A593"],
+            ["Póg Mo Thóin Jr", "Spellbreaker", 0.3536, 3565.091000000001, 172, "#FFB66D"],
+            ["S Is Hot", "Catalyst", 0.0021, 2893.786000000001, 1183, "#F49F9C"],
+            ["Sushiyum", "Scourge", 0.5087, 14490.694999999994, 235, "#6DB691"],
+            ["Todays Dps Forecast", "Catalyst", 0.0052, 4758.980000000001, 1843, "#F49F9C"],
+            ["Trash Revenant", "Renegade", 0.0011, 4565.43, 1139, "#DA8F78"],
+            ["Vanya Vitala", "Scrapper", 0.0018, 2360.6139999999996, 57, "#A77B50"],
+            ["Whamcakes", "Necromancer", 0.2167, 13771.823, 1503, "#339966"],
+            ["Yolonius Maximus", "Spellbreaker", 0.2244, 1289.4959999999999, 149, "#FFB66D"],
+            ["Evo Snugglebunny", "Dragonhunter", 0.0037, 1897.0600000000004, 174, "#50A7D3"],
+            ["Fletcher Quillian", "Druid", 0.0044, 1470.2300000000002, 21, "#7BD350"],
+            ["Geira Niell", "Chronomancer", 0.0078, 2972.676, 94, "#A750A7"],
+            ["Vesaya Emberstone", "Tempest", 0.007, 4270.361, 124, "#EE6F6A"],
+            ["Zärïlä", "Firebrand", 0.014, 10261.032999999985, 643, "#6DB6DA"],
+            ["Blaze Fangdango", "Firebrand", 0.0018, 5403.714999999996, 542, "#6DB6DA"],
+            ["Beto Man", "Firebrand", 0.0122, 1734.8250000000007, 142, "#6DB6DA"],
+            ["Flitz Käferchen", "Firebrand", 0.0111, 3308.553, 171, "#6DB6DA"],
+            ["Bágéls", "Dragonhunter", 0.0017, 969.416, 268, "#50A7D3"],
+            ["Cypher Jormag", "Dragonhunter", 0.0026, 5390.766, 1347, "#50A7D3"],
+            ["Smol Gealia", "Scourge", 0.295, 6335.166, 120, "#6DB691"],
+            ["Ddisform", "Scourge", 0.4398, 12565.199999999995, 211, "#6DB691"],
+            ["Fluffypinkhandcuffs", "Dragonhunter", 0.0, 2957.602000000001, 698, "#50A7D3"],
+            ["Forgrim Foehammer", "Spellbreaker", 0.2421, 938.6789999999999, 68, "#FFB66D"],
+            ["Ereaven", "Druid", 0.0017, 800.1830000000001, 37, "#7BD350"],
+            ["General Ahchoo", "Scourge", 0.4476, 11319.398999999989, 215, "#6DB691"],
+            ["Fade The Ranger", "Druid", 0.0022, 461.252, 51, "#7BD350"],
+            ["Paksenarrion Ri", "Druid", 0.0011, 290.63300000000004, 20, "#7BD350"],
+            ["Zandiz", "Reaper", 0.3762, 1878.5120000000002, 864, "#50A77B"],
+            ["Archemist Gheddar", "Scourge", 0.4973, 13047.396999999999, 651, "#6DB691"],
+            ["Neige Rose", "Vindicator", 0.0, 442.03800000000007, 327, "#E1A593"],
+            ["Skytzo Frentik", "Untamed", 0.1323, 680.299, 281, "#A7E18A"],
+            ["Brianna De Arco", "Berserker", 0.0512, 611.495, 814, "#FFA750"],
+            ["Dr Lichmore", "Holosmith", 0.0047, 4224.981999999998, 1286, "#B6916D"],
+            ["Ravynux", "Herald", 0.0289, 696.082, 95, "#D3795D"],
+            ["Dalgwynn The Blue", "Willbender", 0.0076, 86.28800000000001, 520, "#8AC4E1"],
+            ["Justice Northriver", "Soulbeast", 0.0, 1162.325, 479, "#91DA6D"],
+            ["Leafy Erikkson", "Druid", 0.0047, 917.6919999999999, 34, "#7BD350"],
+            ["Heavy Metal Warrior", "Spellbreaker", 0.2988, 611.195, 761, "#FFB66D"],
+            ["Ivar Valkor", "Druid", 0.0, 178.671, 81, "#7BD350"],
+            ["Bronaut", "Holosmith", 0.0, 0, 0, "#B6916D"],
+            ["Guardian Wili", "Firebrand", 0.0132, 432.26899999999995, 303, "#6DB6DA"],
+            ["Bronaut", "Scrapper", 0.0033, 1064.17, 965, "#A77B50"],
+            ["Oda Warr", "Bladesworn", 0.0012, 73.898, 226, "#FFC48A"],
+            ["Darhid", "Vindicator", 0.0, 102.49499999999999, 23, "#E1A593"],
+            ["Pycachu", "Firebrand", 0.0061, 95.483, 77, "#6DB6DA"],
+            ["Sou Besta", "Druid", 0.0, 1068.3909999999998, 170, "#7BD350"],
+            ["Haneraru", "Soulbeast", 0.0, 0, 0, "#91DA6D"],
+   ]
+  }],
+  visualMap: {
+    show: true,
+    dimension: 4, // means the 5th column		
+    min: 0, // lower bound
+    max: 1843, // upper bound
+    inRange: {
+      // Size of the bubble.
+      symbolSize: [5, 50]
+    }
+  },			
+xAxis: {
+    type: 'value',
+    name: "Control Effect Score"
+  },
+  yAxis: {
+    type: 'value',
+    name: "Strips per Second"
+  },
+  tooltip: {trigger: 'axis',
+        axisPointer: {
+          type: 'cross'
+        },    
+},
+  series: [
+    {
+      type: 'scatter',
+      encode: {
+        // Map "amount" column to x-axis.
+        x: 'Control',
+        // Map "product" row to y-axis.
+        y: 'Strips',
+        // format tooltip
+        tooltip: [0, 1, 2, 3, 4],
+      },	
+      itemStyle: {
+        color: function(seriesIndex) {
+          console.log(seriesIndex);
+        	console.log(seriesIndex.color);
+        	console.log(seriesIndex.data[5]);
+        	if (seriesIndex.data[5]){
+        	  return seriesIndex.data[5];
+        	}
+        }
+      }
+    }
+  ]
+};

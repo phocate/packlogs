@@ -1,0 +1,115 @@
+created: 20250709222041
+creator: Drevarr
+tags: ChartData
+title: 202507092220_deaths_ChartData
+type: text/vnd.tiddlywiki
+
+
+option = {
+	legend: {},
+	grid: {left: '20%'},
+	tooltip: {},
+	dataset: [
+		{
+		source: [
+			['Deaths/Min','Total Deaths', 'Name', 'Profession', 'Fights', 'Duration' ],
+			[0.1983, 8, 'Forgrim Foehammer', '{{Spellbreaker}}', '19', '2420'],
+			[0.1883, 8, 'Fluffypinkhandcuffs', '{{Dragonhunter}}', '20', '2549'],
+			[0.1772, 8, 'Beto Man', '{{Firebrand}}', '21', '2709'],
+			[0.1772, 8, 'Geira Niell', '{{Chronomancer}}', '21', '2709'],
+			[0.1772, 8, 'Fletcher Quillian', '{{Druid}}', '21', '2709'],
+			[0.1772, 8, 'Evo Snugglebunny', '{{Dragonhunter}}', '21', '2709'],
+			[0.1772, 8, 'Yolonius Maximus', '{{Spellbreaker}}', '21', '2709'],
+			[0.1772, 8, 'Whamcakes', '{{Necromancer}}', '21', '2709'],
+			[0.1772, 8, 'Trash Revenant', '{{Renegade}}', '21', '2709'],
+			[0.1772, 8, 'Todays Dps Forecast', '{{Catalyst}}', '21', '2709'],
+			[0.1906, 8, 'Sushiyum', '{{Scourge}}', '19', '2518'],
+			[0.1906, 8, 'Darkus The Black', '{{Scourge}}', '19', '2518'],
+			[0.1772, 8, 'Aerthan Breaker', '{{Spellbreaker}}', '21', '2709'],
+			[0.1772, 8, 'Aerie Seleste', '{{Holosmith}}', '21', '2709'],
+			[0.1648, 7, 'General Ahchoo', '{{Scourge}}', '20', '2549'],
+			[0.155, 7, 'Vesaya Emberstone', '{{Tempest}}', '21', '2709'],
+			[0.155, 7, 'Molten Halwa', '{{Vindicator}}', '21', '2709'],
+			[0.155, 7, 'Dragrons Lord', '{{Renegade}}', '21', '2709'],
+			[0.1412, 6, 'Ddisform', '{{Scourge}}', '20', '2549'],
+			[0.1477, 6, 'Flitz Käferchen', '{{Firebrand}}', '18', '2438'],
+			[0.1329, 6, 'Póg Mo Thóin Jr', '{{Spellbreaker}}', '21', '2709'],
+			[0.1329, 6, 'Extenberianark', '{{Warrior}}', '21', '2709'],
+			[0.1948, 6, 'Etheria Lain', '{{Chronomancer}}', '14', '1848'],
+			[0.1329, 6, 'Dept Of Mech Engr', '{{Scrapper}}', '21', '2709'],
+			[0.2113, 5, 'Ravynux', '{{Herald}}', '12', '1420'],
+			[0.178, 5, 'Dr Lichmore', '{{Holosmith}}', '13', '1685'],
+			[0.1107, 5, 'Mildde', '{{Scrapper}}', '21', '2709'],
+			[0.1862, 4, 'Justice Northriver', '{{Soulbeast}}', '11', '1289'],
+			[0.1413, 4, 'Brianna De Arco', '{{Berserker}}', '13', '1699'],
+			[0.3113, 4, 'Skytzo Frentik', '{{Untamed}}', '5', '771'],
+			[0.2634, 4, 'Paksenarrion Ri', '{{Druid}}', '7', '911'],
+			[0.2634, 4, 'Fade The Ranger', '{{Druid}}', '7', '911'],
+			[0.1357, 4, 'Bágéls', '{{Dragonhunter}}', '14', '1769'],
+			[0.0886, 4, 'Zärïlä', '{{Firebrand}}', '21', '2709'],
+			[0.0984, 4, 'S Is Hot', '{{Catalyst}}', '18', '2438'],
+			[0.2247, 3, 'Oda Warr', '{{Bladesworn}}', '6', '801'],
+			[0.1554, 3, 'Heavy Metal Warrior', '{{Spellbreaker}}', '10', '1158'],
+			[0.1396, 3, 'Leafy Erikkson', '{{Druid}}', '11', '1289'],
+			[0.4286, 3, 'Zandiz', '{{Reaper}}', '4', '420'],
+			[0.079, 3, 'Smol Gealia', '{{Scourge}}', '17', '2278'],
+			[0.079, 3, 'Cypher Jormag', '{{Dragonhunter}}', '17', '2278'],
+			[0.1323, 2, 'Bronaut', '{{Scrapper}}', '7', '907'],
+			[0.1626, 2, 'Brianna De Arco', '{{Spellbreaker}}', '5', '738'],
+			[0.0938, 1, 'Darhid', '{{Vindicator}}', '5', '640'],
+			[0.3947, 1, 'Guardian Wili', '{{Firebrand}}', '2', '152'],
+			[0.5505, 1, 'Ivar Valkor', '{{Druid}}', '1', '109'],
+			[0.458, 1, 'Dalgwynn The Blue', '{{Willbender}}', '1', '131'],
+			[0.1179, 1, 'Neige Rose', '{{Vindicator}}', '3', '509'],
+			[0.0, 0, 'Haneraru', '{{Soulbeast}}', '1', '81'],
+			[0.0, 0, 'Sou Besta', '{{Druid}}', '3', '330'],
+			[0.0, 0, 'Pycachu', '{{Firebrand}}', '3', '330'],
+			[0.0, 0, 'Bronaut', '{{Holosmith}}', '1', '46'],
+			]
+		},
+	],
+    xAxis: [
+    {},
+  ],
+  yAxis: { 
+    type: 'category'
+  },
+  visualMap: {
+    orient: 'horizontal',
+    left: 'center',
+    min: 0.0,
+    max: 0.5505,
+    precision: 2,
+    text: ['High Deaths /Sec', 'Low Deaths/Sec'],
+    // Map the score column to color
+    dimension: 0,
+    inRange: {
+      color: ['#FD665F', '#FFCE34', '#65B581']
+    }
+  },
+  series: [
+    {
+      name: 'Total Deaths',
+      type: 'bar',
+      encode: {
+        // Map 'Total Stat' column to x-axis.
+        x: 'Total Deaths',
+        // Map 'Name' row to y-axis.
+        y: 'Name',
+        tooltip: [3, 4, 5, 1, 0]
+      }
+    },
+    {
+      name: 'Deaths/Sec',
+      type: 'bar',
+      encode: {
+        // Map 'Total Stat' column to x-axis.
+        x: 'Total Deaths/Sec',
+        // Map 'Name' row to y-axis.
+        y: 'Name',
+        tooltip: [3, 4, 5, 1, 0]
+      }
+    }
+  ]
+};
+

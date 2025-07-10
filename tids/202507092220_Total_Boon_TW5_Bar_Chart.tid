@@ -1,0 +1,190 @@
+created: 20250709222041
+creator: Drevarr
+tags: ChartData
+title: 202507092220_Total_Boon_Generation_BarChartData
+type: text/vnd.tiddlywiki
+
+
+option = {
+  color: ['#bfedd0', '#99e2b4','#88d4ab','#78c6a3', '#81c5ab', '#67b99a','#56ab91','#469d89','#358f80','#248277','#14746f','#036666'],
+  legend: {},
+  tooltip: {},
+  grid: {left: '25%', top: '5%'},
+  dataset: [
+    {
+      dimensions: ['Player','stability','protection','might','fury','alacrity','resolution','aegis','resistance','quickness','vigor','swiftness','regeneration','Total','Profession'],
+      source: [
+['{{Berserker}} Brianna De Arco', 2716.078, 0, 3986.772, 763.8223, 0, 0, 0, 503.2074, 0, 0, 777.2272, 33.5395, 8780.6464, 'Berserker'],
+['{{Bladesworn}} Oda Warr', 0, 0, 3424.141, 390.8124, 0, 0, 0, 0, 0, 0, 0, 9.5744, 3824.5278, 'Bladesworn'],
+['{{Catalyst}} S Is Hot', 0, 0, 3427.655, 1020.5636, 0, 0, 0, 0, 0, 0, 193.3457, 0, 4641.5643, 'Catalyst'],
+['{{Catalyst}} Todays Dps Forecast', 0, 0, 4062.211, 1520.764, 0, 0, 0, 0, 0, 0, 166.6511, 0, 5749.6261, 'Catalyst'],
+['{{Chronomancer}} Etheria Lain', 3810.617, 134.1277, 624.989, 153.4815, 0, 0, 179.0617, 101.222, 184.1137, 110.2159, 14.072, 196.0943, 5507.9948, 'Chronomancer'],
+['{{Chronomancer}} Geira Niell', 17714.507, 1831.185, 23965.74, 1810.466, 0, 0, 1109.1925, 997.1159, 1740.4161, 1999.1773, 381.4662, 1654.7292, 53203.9952, 'Chronomancer'],
+['{{Dragonhunter}} Bágéls', 8886.348, 1545.6763, 1768.532, 176.3509, 9.3253, 2647.4212, 1609.7518, 187.6613, 9.3402, 61.0639, 1856.2778, 642.7745, 19400.5232, 'Dragonhunter'],
+['{{Dragonhunter}} Cypher Jormag', 0, 0, 1514.833, 140.5368, 0, 705.4012, 393.9217, 302.9395, 0, 0, 0, 2.416, 3060.0482, 'Dragonhunter'],
+['{{Dragonhunter}} Evo Snugglebunny', 4042.144, 234.3253, 8505.077, 0, 0, 900.3767, 22.1392, 0, 0, 0, 19.0379, 103.8744, 13826.9745, 'Dragonhunter'],
+['{{Dragonhunter}} Fluffypinkhandcuffs', 0, 0, 1389.712, 0, 0, 1149.5611, 159.0121, 365.8257, 0, 0, 0, 6.5668, 3070.6777, 'Dragonhunter'],
+['{{Druid}} Ereaven', 687.752, 566.6475, 14344.203, 2681.9875, 0, 0, 0, 0, 0, 973.1264, 1894.5261, 2261.9084, 23410.1509, 'Druid'],
+['{{Druid}} Fade The Ranger', 276.012, 0, 8594.443, 891.8497, 0, 235.0088, 0, 114.6663, 0, 0, 943.7649, 2902.663, 13958.4077, 'Druid'],
+['{{Druid}} Fletcher Quillian', 1056.311, 2154.4241, 26881.803, 2964.7237, 0, 952.0985, 0, 361.5765, 0, 836.6724, 3103.4666, 5404.0585, 43715.1343, 'Druid'],
+['{{Druid}} Ivar Valkor', 0, 0, 321.768, 23.9538, 0, 0, 0, 0, 0, 0, 0, 0.9385, 346.6603, 'Druid'],
+['{{Druid}} Leafy Erikkson', 0, 172.5493, 8167.83, 854.6196, 26.355, 361.6423, 3.6273, 181.826, 9.4392, 55.643, 647.302, 2511.6497, 12992.4834, 'Druid'],
+['{{Druid}} Paksenarrion Ri', 309.002, 14.6983, 2646.398, 234.0808, 0, 168.1536, 0, 82.8477, 0, 246.5807, 124.9674, 664.7679, 4491.4964, 'Druid'],
+['{{Druid}} Sou Besta', 0, 34.1937, 697.01, 0, 0, 0, 0, 0, 0, 0, 0, 411.9403, 1143.144, 'Druid'],
+['{{Firebrand}} Beto Man', 18763.721, 3343.7644, 9742.191, 291.2727, 22.0874, 6523.8444, 1685.1064, 1811.544, 2260.1504, 724.8779, 540.8644, 562.2294, 46271.6534, 'Firebrand'],
+['{{Firebrand}} Blaze Fangdango', 17983.654, 2850.728, 15434.393, 876.3372, 9.4242, 6357.0295, 2087.6585, 2308.7535, 2562.2197, 13.9433, 3780.0249, 93.3572, 54357.523, 'Firebrand'],
+['{{Firebrand}} Flitz Käferchen', 7749.846, 1430.0402, 11221.478, 2310.1007, 0, 1512.9056, 636.7008, 1321.405, 1274.1935, 18.1828, 783.9887, 1.1071, 28259.9484, 'Firebrand'],
+['{{Firebrand}} Guardian Wili', 258.216, 43.9858, 71.232, 0, 0, 133.6936, 6.767, 14.2909, 55.739, 40.3544, 43.3625, 0, 667.6412, 'Firebrand'],
+['{{Firebrand}} Pycachu', 831.207, 95.1096, 1468.075, 308.6704, 0, 178.9479, 45.5604, 143.604, 94.727, 27.2556, 101.9646, 37.7307, 3332.8522, 'Firebrand'],
+['{{Firebrand}} Zärïlä', 7048.249, 92.845, 11751.855, 1370.2033, 0, 2312.3024, 208.831, 388.5162, 573.688, 2.2648, 944.2235, 5.371, 24698.3492, 'Firebrand'],
+['{{Herald}} Ravynux', 10147.733, 235.4894, 12404.345, 28.3367, 0, 0, 54.5962, 727.5341, 0, 154.53, 0, 0, 23752.5644, 'Herald'],
+['{{Holosmith}} Aerie Seleste', 0, 0, 1658.905, 1740.3671, 0, 0, 0, 0, 0, 0, 117.489, 4.1783, 3520.9394, 'Holosmith'],
+['{{Holosmith}} Bronaut', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'Holosmith'],
+['{{Holosmith}} Dorito Mt Dew Gamer', 0, 0, 383.097, 437.3944, 0, 0, 0, 0, 0, 0, 25.1393, 0, 845.6307, 'Holosmith'],
+['{{Holosmith}} Dr Lichmore', 0, 0, 1902.555, 1099.7305, 0, 0, 0, 0, 0, 0, 70.6187, 27.6892, 3100.5934, 'Holosmith'],
+['{{Necromancer}} Whamcakes', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 20.4584, 20.4584, 'Necromancer'],
+['{{Reaper}} Zandiz', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6.7569, 6.7569, 'Reaper'],
+['{{Renegade}} Dragrons Lord', 507.053, 985.986, 7269.085, 1671.8374, 0, 338.3355, 0, 38.5071, 0, 0, 75.7066, 42.7214, 10929.232, 'Renegade'],
+['{{Renegade}} Trash Revenant', 545.568, 581.2289, 2094.475, 1374.4781, 0, 359.1779, 0, 58.1343, 0, 0, 158.627, 22.4115, 5194.1007, 'Renegade'],
+['{{Scourge}} Archemist Gheddar', 1707.782, 30.9736, 3708.409, 11.0233, 32.6001, 6.3124, 1.3682, 0, 3.5998, 56.1705, 814.0453, 9.3558, 6381.64, 'Scourge'],
+['{{Scourge}} Darkus The Black', 1477.918, 40.6826, 19434.509, 11.5805, 38.6803, 11.9488, 4.1802, 0, 15.4423, 1976.9568, 1251.1766, 499.6506, 24762.7257, 'Scourge'],
+['{{Scourge}} Ddisform', 3757.616, 1202.9704, 26813.181, 87.696, 80.1275, 17.1821, 196.1787, 10.2896, 5.1393, 4960.0974, 1351.3381, 3738.3575, 42220.1736, 'Scourge'],
+['{{Scourge}} General Ahchoo', 3651.803, 101.0389, 23117.882, 44.5498, 155.0273, 19.3705, 48.6007, 3.8252, 17.6423, 2284.2418, 2781.446, 1115.2785, 33340.706, 'Scourge'],
+['{{Scourge}} Smol Gealia', 1800.286, 30.1362, 6519.128, 0, 24.7388, 0, 5.0395, 0, 0, 463.9043, 1079.6069, 649.2266, 10572.0663, 'Scourge'],
+['{{Scourge}} Sushiyum', 3901.985, 26.7337, 22618.813, 31.7288, 65.5541, 8.5358, 9.1813, 6.8644, 23.045, 2450.501, 3530.9188, 335.8759, 33009.7368, 'Scourge'],
+['{{Scrapper}} Bronaut', 0, 0, 1899.923, 484.6976, 0, 0, 0, 0, 0, 0, 43.2356, 14.8574, 2442.7136, 'Scrapper'],
+['{{Scrapper}} Dept Of Mech Engr', 2939.891, 2436.2482, 14127.655, 74.6321, 426.1466, 348.0635, 567.6454, 35.3253, 27.9788, 1370.3907, 1894.2728, 7416.994, 31665.2434, 'Scrapper'],
+['{{Scrapper}} Mildde', 3801.477, 3379.6995, 24548.073, 105.1247, 464.8743, 668.9249, 869.6358, 39.6294, 75.7092, 1183.567, 1185.1303, 6057.2707, 42379.1158, 'Scrapper'],
+['{{Scrapper}} Vanya Vitala', 2581.517, 3013.4998, 18311.551, 131.3033, 408.7068, 622.4934, 618.8019, 13.0503, 82.4981, 1442.9291, 1277.9446, 6228.9506, 34733.2459, 'Scrapper'],
+['{{Soulbeast}} Haneraru', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 'Soulbeast'],
+['{{Soulbeast}} Justice Northriver', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 377.4773, 183.3713, 560.8486, 'Soulbeast'],
+['{{Spellbreaker}} Aerthan Breaker', 9681.86, 1238.4998, 74930.55, 2097.5147, 0, 1558.5716, 389.0886, 2562.6741, 825.1244, 2748.4687, 4461.6009, 230.3361, 100724.2889, 'Spellbreaker'],
+['{{Spellbreaker}} Brianna De Arco', 1201.972, 478.8321, 15074.618, 453.9827, 0, 501.4222, 293.2502, 316.1798, 83.1501, 192.9657, 676.3181, 513.0305, 19785.7214, 'Spellbreaker'],
+['{{Spellbreaker}} Forgrim Foehammer', 638.774, 257.672, 49838.775, 1004.797, 0, 62.8567, 131.0167, 675.1025, 389.6058, 1280.2309, 2903.0508, 0, 57181.8814, 'Spellbreaker'],
+['{{Spellbreaker}} Heavy Metal Warrior', 0, 0, 1533.443, 0, 0, 0, 0, 0, 0, 0, 96.5597, 0, 1630.0027, 'Spellbreaker'],
+['{{Spellbreaker}} Póg Mo Thóin Jr', 770.982, 0, 10073.959, 421.5155, 0, 0, 0, 545.914, 336.27, 1077.9349, 983.2216, 0, 14209.797, 'Spellbreaker'],
+['{{Spellbreaker}} Yolonius Maximus', 6240.349, 1032.3694, 26322.985, 2657.5023, 0, 274.0552, 595.3982, 1842.3279, 415.0179, 1581.4732, 3006.9711, 291.4569, 44259.9061, 'Spellbreaker'],
+['{{Tempest}} Vesaya Emberstone', 1421.972, 2727.4282, 51908.225, 570.4795, 0, 0, 0, 0, 0, 554.5383, 1905.5221, 1381.3811, 60469.5462, 'Tempest'],
+['{{Untamed}} Skytzo Frentik', 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 23.4176, 0, 23.4176, 'Untamed'],
+['{{Vindicator}} Darhid', 0, 636.2155, 3104.711, 72.9348, 0, 0, 86.1489, 20.7468, 0, 185.0392, 138.7007, 427.9224, 4672.4193, 'Vindicator'],
+['{{Vindicator}} Molten Halwa', 15442.005, 1822.5069, 11218.07, 0, 0, 0, 156.9882, 227.265, 0, 385.0117, 228.1406, 1012.3081, 30492.2955, 'Vindicator'],
+['{{Vindicator}} Neige Rose', 519.65, 0, 0, 0, 0, 0, 0, 0, 0, 0, 18.9459, 0, 538.5959, 'Vindicator'],
+['{{Warrior}} Extenberianark', 0, 0, 7334.346, 992.6147, 0, 0, 0, 0, 0, 0, 934.5736, 8.8741, 9270.4084, 'Warrior'],
+['{{Willbender}} Dalgwynn The Blue', 48.339, 15.0388, 123.533, 70.8435, 0, 0, 0, 16.113, 0, 0, 0, 5.747, 279.6143, 'Willbender'],
+      ]
+    },
+    {
+      transform: {
+        type: 'sort',
+        config: [
+          { dimension: 'Profession', order: 'desc' },
+          { dimension: 'Total', order: 'asc' }
+        ]
+      }
+    }
+  ],
+  yAxis: {
+    type: 'category',
+    axisLabel: { interval: 0, rotate: 0 }
+  },
+  xAxis: {},
+  dataZoom: [
+    {
+      type: 'slider',
+      yAxisIndex: 0,
+      filterMode: 'none'
+    },
+    {
+      type: 'inside',
+      yAxisIndex: 0,
+      filterMode: 'none'
+    }
+  ],    
+  series: [
+    {
+      type: 'bar',
+      stack: 'totalBoons',
+      name: 'Stability',
+      encode: { y: 'Player', x: 'stability' },
+      datasetIndex: 1
+    },
+    {
+      type: 'bar',
+      stack: 'totalBoons',
+      name: 'Protection',
+      encode: { y: 'Player', x: 'protection' },
+      datasetIndex: 1
+    },
+    {
+      type: 'bar',
+      stack: 'totalBoons',
+      name: 'Might',
+      encode: { y: 'Player', x: 'might' },
+      datasetIndex: 1
+    },
+    {
+      type: 'bar',
+      stack: 'totalBoons',
+      name: 'Fury',
+      encode: { y: 'Player', x: 'fury' },
+      datasetIndex: 1
+    },
+    {
+      type: 'bar',
+      stack: 'totalBoons',
+      name: 'Alacrity',
+      encode: { y: 'Player', x: 'alacrity' },
+      datasetIndex: 1
+    },
+    {
+      type: 'bar',
+      stack: 'totalBoons',
+      name: 'Resolution',
+      encode: { y: 'Player', x: 'resolution' },
+      datasetIndex: 1
+    },
+    {
+      type: 'bar',
+      stack: 'totalBoons',
+      name: 'Aegis',
+      encode: { y: 'Player', x: 'aegis' },
+      datasetIndex: 1
+    },
+    {
+      type: 'bar',
+      stack: 'totalBoons',
+      name: 'Resistance',
+      encode: { y: 'Player', x: 'resistance' },
+      datasetIndex: 1
+    },
+    {
+      type: 'bar',
+      stack: 'totalBoons',
+      name: 'Quickness',
+      encode: { y: 'Player', x: 'quickness' },
+      datasetIndex: 1
+    },
+    {
+      type: 'bar',
+      stack: 'totalBoons',
+      name: 'Vigor',
+      encode: { y: 'Player', x: 'vigor' },
+      datasetIndex: 1
+    },
+    {
+      type: 'bar',
+      stack: 'totalBoons',
+      name: 'Swiftness',
+      encode: { y: 'Player', x: 'swiftness' },
+      datasetIndex: 1
+    },
+    {
+      type: 'bar',
+      stack: 'totalBoons',
+      name: 'Regeneration',
+      encode: { y: 'Player', x: 'regeneration' },
+      datasetIndex: 1
+    },
+  ]
+};
+

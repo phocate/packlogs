@@ -1,0 +1,74 @@
+created: 20250709222041
+creator: Drevarr
+tags: ChartData
+title: 202507092220_DPSStats_BubbleChartData
+type: text/vnd.tiddlywiki
+
+
+
+var option = {
+  dataset: [{
+    source: [
+            ["Name", "Profession", "DPS", "Ch2DPS", "Ch5DPS", "CaDPS", "CDPS", "Downs", "Kills", "color", "Fight Time"],
+            ["Aerie Seleste", "Holosmith", 1437, 298, 395, 381, 3673, 0.7, 0.61, "#B6916D", 2560],
+            ["Dragrons Lord", "Renegade", 1702, 249, 374, 339, 4475, 0.59, 0.38, "#DA8F78", 2560],
+            ["Extenberianark", "Warrior", 1557, 266, 352, 310, 4262, 0.98, 0.52, "#FF9933", 2560],
+            ["Todays Dps Forecast", "Catalyst", 1821, 461, 629, 369, 5043, 1.26, 0.54, "#F49F9C", 2429],
+            ["Whamcakes", "Necromancer", 1574, 333, 439, 425, 4877, 1.36, 0.47, "#339966", 2551],
+            ["Zärïlä", "Firebrand", 585, 72, 127, 146, 1617, 0.2, 0.2, "#6DB6DA", 880],
+            ["Blaze Fangdango", "Firebrand", 565, 93, 147, 111, 1770, 0.18, 0.13, "#6DB6DA", 2399],
+            ["Zärïlä", "Firebrand", 671, 84, 151, 165, 1504, 0.23, 0.2, "#6DB6DA", 1829],
+            ["Trash Revenant", "Renegade", 1409, 345, 471, 419, 4075, 1.02, 0.75, "#DA8F78", 1991],
+            ["Fluffypinkhandcuffs", "Dragonhunter", 844, 171, 249, 308, 2715, 0.55, 0.55, "#50A7D3", 1749],
+            ["S Is Hot", "Catalyst", 1636, 394, 541, 351, 4621, 1.13, 0.53, "#F49F9C", 1705],
+            ["Zandiz", "Reaper", 864, 110, 155, 29, 1790, 0.29, 0.0, "#50A77B", 420],
+            ["Archemist Gheddar", "Scourge", 676, 111, 191, 159, 1994, 0.28, 0.21, "#6DB691", 1694],
+            ["Cypher Jormag", "Dragonhunter", 1714, 354, 524, 429, 4548, 1.02, 0.69, "#50A7D3", 1643],
+            ["Brianna De Arco", "Berserker", 753, 181, 262, 198, 2474, 0.5, 0.5, "#FFA750", 360],
+            ["Dr Lichmore", "Holosmith", 1403, 251, 381, 450, 3141, 0.4, 0.6, "#B6916D", 1508],
+            ["Brianna De Arco", "Berserker", 902, 211, 249, 240, 2202, 0.7, 0.4, "#FFA750", 1208],
+            ["Justice Northriver", "Soulbeast", 508, 43, 70, 70, 868, 0.06, 0.0, "#91DA6D", 1084],
+            ["Heavy Metal Warrior", "Spellbreaker", 890, 154, 210, 275, 2313, 0.19, 0.38, "#FFB66D", 951],
+            ["Bronaut", "Scrapper", 1228, 276, 385, 451, 4627, 0.79, 0.57, "#A77B50", 529],
+   ]
+  }],
+  visualMap: {
+    show: true,
+    dimension: 6, // means the 7th column		
+    min: 9, // lower bound
+    max: 5043, // upper bound
+    inRange: {
+      // Size of the bubble.
+      symbolSize: [5, 50]
+    }
+  },			
+xAxis: {
+    type: 'value',
+    name: "Ch5DPS"
+  },
+  yAxis: {
+    type: 'value',
+    name: "CaDPS"
+  },
+  tooltip: {trigger: 'axis'},
+  series: [
+    {
+      type: 'scatter',
+      encode: {
+        // Map "amount" column to x-axis.
+        x: 'Ch5DPS',
+        // Map "product" row to y-axis.
+        y: 'CaDPS',
+        // format tooltip
+        tooltip: [0, 1, 2, 3, 4, 5, 6, 7, 8, 10],
+      },	
+      itemStyle: {
+        color: function(seriesIndex) {
+        	if (seriesIndex.data[9]){
+        	  return seriesIndex.data[9];
+        	}
+        }
+      }
+    }
+  ]
+};

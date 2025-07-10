@@ -1,0 +1,64 @@
+created: 20250709222041
+creator: Drevarr
+tags: ChartData
+title: 202507092220_iol_ChartData
+type: text/vnd.tiddlywiki
+
+
+option = {
+	legend: {},
+	grid: {left: '20%'},
+	tooltip: {},
+	dataset: [
+		{
+		source: [
+			['Illusion of Life/Sec','Total Illusion of Life', 'Name', 'Profession', 'Fights', 'Duration' ],
+			[0.0022, 4, 'Etheria Lain', '{{Chronomancer}}', '14', '1848'],
+			]
+		},
+	],
+    xAxis: [
+    {},
+  ],
+  yAxis: { 
+    type: 'category'
+  },
+  visualMap: {
+    orient: 'horizontal',
+    left: 'center',
+    min: 0.0022,
+    max: 0.0022,
+    precision: 2,
+    text: ['High Illusion of Life /Sec', 'Low Illusion of Life/Sec'],
+    // Map the score column to color
+    dimension: 0,
+    inRange: {
+      color: ['#FD665F', '#FFCE34', '#65B581']
+    }
+  },
+  series: [
+    {
+      name: 'Total Illusion of Life',
+      type: 'bar',
+      encode: {
+        // Map 'Total Stat' column to x-axis.
+        x: 'Total Illusion of Life',
+        // Map 'Name' row to y-axis.
+        y: 'Name',
+        tooltip: [3, 4, 5, 1, 0]
+      }
+    },
+    {
+      name: 'Illusion of Life/Sec',
+      type: 'bar',
+      encode: {
+        // Map 'Total Stat' column to x-axis.
+        x: 'Total Illusion of Life/Sec',
+        // Map 'Name' row to y-axis.
+        y: 'Name',
+        tooltip: [3, 4, 5, 1, 0]
+      }
+    }
+  ]
+};
+

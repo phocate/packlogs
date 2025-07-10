@@ -1,0 +1,118 @@
+created: 20250709222041
+creator: Drevarr
+tags: ChartData
+title: 202507092220_stab_CC_BubbleChartData
+type: text/vnd.tiddlywiki
+
+
+
+var option = {
+  dataset: [{
+    source: [
+            ["Name", "Profession", "Stability Uptime", "Hard CC Count", "Hard CC Duration", "color"],
+            ["Aerie Seleste", "Holosmith", 52.45, 40.0, 58596.0, "#B6916D"],
+            ["Aerthan Breaker", "Spellbreaker", 57.77, 29.0, 43540.0, "#FFB66D"],
+            ["Brianna De Arco", "Spellbreaker", 51.7, 10.0, 14602.0, "#FFB66D"],
+            ["Darkus The Black", "Scourge", 37.63, 48.0, 71809.0, "#6DB691"],
+            ["Dept Of Mech Engr", "Scrapper", 54.93, 23.0, 35580.0, "#A77B50"],
+            ["Dorito Mt Dew Gamer", "Holosmith", 35.58, 22.0, 38181.0, "#B6916D"],
+            ["Dragrons Lord", "Renegade", 53.9, 39.0, 59580.0, "#DA8F78"],
+            ["Etheria Lain", "Chronomancer", 38.39, 23.0, 35588.0, "#A750A7"],
+            ["Extenberianark", "Warrior", 41.78, 48.0, 72460.0, "#FF9933"],
+            ["Mildde", "Scrapper", 45.91, 52.0, 82977.0, "#A77B50"],
+            ["Molten Halwa", "Vindicator", 60.21, 37.0, 57561.0, "#E1A593"],
+            ["Póg Mo Thóin Jr", "Spellbreaker", 51.09, 52.0, 81651.0, "#FFB66D"],
+            ["S Is Hot", "Catalyst", 53.12, 24.0, 36522.0, "#F49F9C"],
+            ["Sushiyum", "Scourge", 44.46, 45.0, 64762.0, "#6DB691"],
+            ["Todays Dps Forecast", "Catalyst", 49.5, 36.0, 52382.0, "#F49F9C"],
+            ["Trash Revenant", "Renegade", 44.46, 38.0, 56060.0, "#DA8F78"],
+            ["Vanya Vitala", "Scrapper", 34.38, 47.0, 75357.0, "#A77B50"],
+            ["Whamcakes", "Necromancer", 41.74, 63.0, 96544.0, "#339966"],
+            ["Yolonius Maximus", "Spellbreaker", 45.21, 53.0, 83154.0, "#FFB66D"],
+            ["Evo Snugglebunny", "Dragonhunter", 53.2, 64.0, 100082.0, "#50A7D3"],
+            ["Fletcher Quillian", "Druid", 51.27, 48.0, 69355.0, "#7BD350"],
+            ["Geira Niell", "Chronomancer", 56.2, 24.0, 40702.0, "#A750A7"],
+            ["Vesaya Emberstone", "Tempest", 47.5, 73.0, 114045.0, "#EE6F6A"],
+            ["Zärïlä", "Firebrand", 41.4, 56.0, 79328.0, "#6DB6DA"],
+            ["Blaze Fangdango", "Firebrand", 58.58, 22.0, 36754.0, "#6DB6DA"],
+            ["Beto Man", "Firebrand", 58.35, 32.0, 52521.0, "#6DB6DA"],
+            ["Flitz Käferchen", "Firebrand", 43.95, 39.0, 57735.0, "#6DB6DA"],
+            ["Bágéls", "Dragonhunter", 48.32, 20.0, 27562.0, "#50A7D3"],
+            ["Cypher Jormag", "Dragonhunter", 37.31, 38.0, 56382.0, "#50A7D3"],
+            ["Smol Gealia", "Scourge", 32.31, 36.0, 51566.0, "#6DB691"],
+            ["Ddisform", "Scourge", 48.28, 41.0, 57734.0, "#6DB691"],
+            ["Fluffypinkhandcuffs", "Dragonhunter", 34.56, 36.0, 59038.0, "#50A7D3"],
+            ["Forgrim Foehammer", "Spellbreaker", 38.49, 60.0, 99613.0, "#FFB66D"],
+            ["Ereaven", "Druid", 29.21, 22.0, 32422.0, "#7BD350"],
+            ["General Ahchoo", "Scourge", 39.33, 49.0, 71304.0, "#6DB691"],
+            ["Fade The Ranger", "Druid", 27.94, 20.0, 32407.0, "#7BD350"],
+            ["Paksenarrion Ri", "Druid", 31.34, 26.0, 46855.0, "#7BD350"],
+            ["Zandiz", "Reaper", 23.5, 19.0, 36202.0, "#50A77B"],
+            ["Archemist Gheddar", "Scourge", 31.58, 38.0, 59714.0, "#6DB691"],
+            ["Neige Rose", "Vindicator", 19.34, 4.0, 9320.0, "#E1A593"],
+            ["Skytzo Frentik", "Untamed", 21.4, 21.0, 32702.0, "#A7E18A"],
+            ["Brianna De Arco", "Berserker", 44.96, 16.0, 21933.0, "#FFA750"],
+            ["Dr Lichmore", "Holosmith", 45.12, 21.0, 28275.0, "#B6916D"],
+            ["Ravynux", "Herald", 46.07, 33.0, 52010.0, "#D3795D"],
+            ["Dalgwynn The Blue", "Willbender", 18.35, 4.0, 5860.0, "#8AC4E1"],
+            ["Justice Northriver", "Soulbeast", 31.02, 23.0, 36576.0, "#91DA6D"],
+            ["Leafy Erikkson", "Druid", 56.46, 7.0, 9480.0, "#7BD350"],
+            ["Heavy Metal Warrior", "Spellbreaker", 51.25, 19.0, 30252.0, "#FFB66D"],
+            ["Ivar Valkor", "Druid", 45.74, 3.0, 4000.0, "#7BD350"],
+            ["Bronaut", "Holosmith", 0.0, 0, 0, "#B6916D"],
+            ["Guardian Wili", "Firebrand", 77.46, 0, 0, "#6DB6DA"],
+            ["Bronaut", "Scrapper", 25.95, 8.0, 10173.0, "#A77B50"],
+            ["Oda Warr", "Bladesworn", 20.77, 22.0, 35555.0, "#FFC48A"],
+            ["Darhid", "Vindicator", 40.32, 5.0, 7500.0, "#E1A593"],
+            ["Pycachu", "Firebrand", 34.24, 5.0, 6873.0, "#6DB6DA"],
+            ["Sou Besta", "Druid", 27.54, 2.0, 3000.0, "#7BD350"],
+            ["Haneraru", "Soulbeast", 0.0, 0, 0, "#91DA6D"],
+   ]
+  }],
+  visualMap: {
+    show: true,
+    dimension: 4, // means the 5th column		
+    min: 0, // lower bound
+    max: 114045.0, // upper bound
+    inRange: {
+      // Size of the bubble.
+      symbolSize: [5, 50]
+    }
+  },			
+xAxis: {
+    type: 'value',
+    name: "Stability Uptime"
+  },
+  yAxis: {
+    type: 'value',
+    name: "Hard CC Count"
+  },
+  tooltip: {trigger: 'axis',
+        axisPointer: {
+          type: 'cross'
+        },    
+},
+  series: [
+    {
+      type: 'scatter',
+      encode: {
+        // Map "amount" column to x-axis.
+        x: 'Stability Uptime',
+        // Map "product" row to y-axis.
+        y: 'Hard CC Count',
+        // format tooltip
+        tooltip: [0, 1, 2, 3, 4],
+      },	
+      itemStyle: {
+        color: function(seriesIndex) {
+          console.log(seriesIndex);
+        	console.log(seriesIndex.color);
+        	console.log(seriesIndex.data[5]);
+        	if (seriesIndex.data[5]){
+        	  return seriesIndex.data[5];
+        	}
+        }
+      }
+    }
+  ]
+};

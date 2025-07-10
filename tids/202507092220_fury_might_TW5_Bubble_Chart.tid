@@ -1,0 +1,118 @@
+created: 20250709222041
+creator: Drevarr
+tags: ChartData
+title: 202507092220_fury_might_BubbleChartData
+type: text/vnd.tiddlywiki
+
+
+
+var option = {
+  dataset: [{
+    source: [
+            ["Name", "Profession", "Fury", "Might", "DPS", "color"],
+            ["Aerie Seleste", "Holosmith", 62.06, 72.17, 1463, "#B6916D"],
+            ["Aerthan Breaker", "Spellbreaker", 67.88, 86.52, 92, "#FFB66D"],
+            ["Brianna De Arco", "Spellbreaker", 51.15, 71.08, 28, "#FFB66D"],
+            ["Darkus The Black", "Scourge", 43.74, 74.64, 148, "#6DB691"],
+            ["Dept Of Mech Engr", "Scrapper", 50.37, 69.89, 84, "#A77B50"],
+            ["Dorito Mt Dew Gamer", "Holosmith", 37.76, 51.4, 295, "#B6916D"],
+            ["Dragrons Lord", "Renegade", 64.95, 81.04, 1687, "#DA8F78"],
+            ["Etheria Lain", "Chronomancer", 27.45, 70.19, 9, "#A750A7"],
+            ["Extenberianark", "Warrior", 41.26, 72.92, 1557, "#FF9933"],
+            ["Mildde", "Scrapper", 63.56, 77.45, 107, "#A77B50"],
+            ["Molten Halwa", "Vindicator", 64.54, 80.91, 24, "#E1A593"],
+            ["Póg Mo Thóin Jr", "Spellbreaker", 67.06, 76.32, 172, "#FFB66D"],
+            ["S Is Hot", "Catalyst", 54.15, 65.3, 1183, "#F49F9C"],
+            ["Sushiyum", "Scourge", 65.29, 69.05, 235, "#6DB691"],
+            ["Todays Dps Forecast", "Catalyst", 76.22, 74.64, 1843, "#F49F9C"],
+            ["Trash Revenant", "Renegade", 66.61, 75.17, 1139, "#DA8F78"],
+            ["Vanya Vitala", "Scrapper", 31.45, 71.55, 57, "#A77B50"],
+            ["Whamcakes", "Necromancer", 35.63, 74.53, 1503, "#339966"],
+            ["Yolonius Maximus", "Spellbreaker", 72.44, 80.09, 149, "#FFB66D"],
+            ["Evo Snugglebunny", "Dragonhunter", 72.72, 76.3, 174, "#50A7D3"],
+            ["Fletcher Quillian", "Druid", 75.41, 75.91, 21, "#7BD350"],
+            ["Geira Niell", "Chronomancer", 73.38, 77.33, 94, "#A750A7"],
+            ["Vesaya Emberstone", "Tempest", 42.3, 74.16, 124, "#EE6F6A"],
+            ["Zärïlä", "Firebrand", 39.25, 73.21, 643, "#6DB6DA"],
+            ["Blaze Fangdango", "Firebrand", 73.6, 75.78, 542, "#6DB6DA"],
+            ["Beto Man", "Firebrand", 57.62, 70.06, 142, "#6DB6DA"],
+            ["Flitz Käferchen", "Firebrand", 68.93, 76.82, 171, "#6DB6DA"],
+            ["Bágéls", "Dragonhunter", 52.99, 72.57, 268, "#50A7D3"],
+            ["Cypher Jormag", "Dragonhunter", 43.06, 68.95, 1347, "#50A7D3"],
+            ["Smol Gealia", "Scourge", 43.55, 62.67, 120, "#6DB691"],
+            ["Ddisform", "Scourge", 35.69, 78.41, 211, "#6DB691"],
+            ["Fluffypinkhandcuffs", "Dragonhunter", 49.82, 70.75, 698, "#50A7D3"],
+            ["Forgrim Foehammer", "Spellbreaker", 39.29, 75.95, 68, "#FFB66D"],
+            ["Ereaven", "Druid", 62.1, 57.42, 37, "#7BD350"],
+            ["General Ahchoo", "Scourge", 50.99, 64.2, 215, "#6DB691"],
+            ["Fade The Ranger", "Druid", 57.08, 71.52, 51, "#7BD350"],
+            ["Paksenarrion Ri", "Druid", 42.05, 66.02, 20, "#7BD350"],
+            ["Zandiz", "Reaper", 34.94, 61.48, 864, "#50A77B"],
+            ["Archemist Gheddar", "Scourge", 41.83, 56.8, 651, "#6DB691"],
+            ["Neige Rose", "Vindicator", 41.45, 54.73, 327, "#E1A593"],
+            ["Skytzo Frentik", "Untamed", 51.0, 56.34, 281, "#A7E18A"],
+            ["Brianna De Arco", "Berserker", 41.42, 53.76, 814, "#FFA750"],
+            ["Dr Lichmore", "Holosmith", 59.53, 63.1, 1286, "#B6916D"],
+            ["Ravynux", "Herald", 55.74, 73.48, 95, "#D3795D"],
+            ["Dalgwynn The Blue", "Willbender", 23.21, 46.97, 520, "#8AC4E1"],
+            ["Justice Northriver", "Soulbeast", 32.84, 53.73, 479, "#91DA6D"],
+            ["Leafy Erikkson", "Druid", 62.3, 65.09, 34, "#7BD350"],
+            ["Heavy Metal Warrior", "Spellbreaker", 51.79, 59.62, 761, "#FFB66D"],
+            ["Ivar Valkor", "Druid", 39.29, 71.95, 81, "#7BD350"],
+            ["Bronaut", "Holosmith", 0.0, 0.0, 0, "#B6916D"],
+            ["Guardian Wili", "Firebrand", 15.71, 56.14, 303, "#6DB6DA"],
+            ["Bronaut", "Scrapper", 52.6, 47.31, 965, "#A77B50"],
+            ["Oda Warr", "Bladesworn", 49.31, 52.21, 226, "#FFC48A"],
+            ["Darhid", "Vindicator", 60.66, 65.25, 23, "#E1A593"],
+            ["Pycachu", "Firebrand", 72.59, 66.58, 77, "#6DB6DA"],
+            ["Sou Besta", "Druid", 80.36, 72.85, 170, "#7BD350"],
+            ["Haneraru", "Soulbeast", 0.0, 0.0, 0, "#91DA6D"],
+   ]
+  }],
+  visualMap: {
+    show: true,
+    dimension: 4, // means the 5th column		
+    min: 0, // lower bound
+    max: 1843, // upper bound
+    inRange: {
+      // Size of the bubble.
+      symbolSize: [5, 50]
+    }
+  },			
+xAxis: {
+    type: 'value',
+    name: "Fury Uptime"
+  },
+  yAxis: {
+    type: 'value',
+    name: "Might Uptime"
+  },
+  tooltip: {trigger: 'axis',
+        axisPointer: {
+          type: 'cross'
+        },    
+},
+  series: [
+    {
+      type: 'scatter',
+      encode: {
+        // Map "amount" column to x-axis.
+        x: 'Fury',
+        // Map "product" row to y-axis.
+        y: 'Might',
+        // format tooltip
+        tooltip: [0, 1, 2, 3, 4],
+      },	
+      itemStyle: {
+        color: function(seriesIndex) {
+          console.log(seriesIndex);
+        	console.log(seriesIndex.color);
+        	console.log(seriesIndex.data[5]);
+        	if (seriesIndex.data[5]){
+        	  return seriesIndex.data[5];
+        	}
+        }
+      }
+    }
+  ]
+};
