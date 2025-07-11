@@ -117,44 +117,42 @@ jobs:
         echo "Creating Elite Insights configuration..."
         
         # Create config file for detailed WvW parsing with JSON output
-        $config = @"
-{
-  "SaveAtOut": false,
-  "OutLocation": "parsed",
-  "SaveOutTrace": false,
-  "Anonymous": false,
-  "AddPoVProf": false,
-  "AddDuration": false,
-  "SingleThreaded": false,
-  "ParseMultipleLogs": true,
-  "SkipFailedTries": true,
-  "CustomTooShort": 0,
-  "ParsePhases": true,
-  "ParseCombatReplay": true,
-  "ComputeDamageModifiers": true,
-  "DetailledWvW": true,
-  "SaveOutHTML": false,
-  "HtmlExternalScripts": false,
-  "HtmlExternalScriptsPath": "",
-  "HtmlExternalScriptsCdn": "",
-  "LightTheme": false,
-  "HtmlCompressJson": false,
-  "SaveOutCSV": false,
-  "SaveOutJSON": true,
-  "IndentJSON": false,
-  "SaveOutXML": false,
-  "IndentXML": false,
-  "CompressRaw": false,
-  "RawTimelineArrays": true,
-  "UploadToDPSReports": false,
-  "DPSReportUserToken": "",
-  "UploadToWingman": false,
-  "WebhookURL": "",
-  "SendEmbedToWebhook": false,
-  "SendSimpleMessageToWebhook": false,
-  "MemoryLimit": 0
-}
-"@
+        $config = '{
+          "SaveAtOut": false,
+          "OutLocation": "parsed",
+          "SaveOutTrace": false,
+          "Anonymous": false,
+          "AddPoVProf": false,
+          "AddDuration": false,
+          "SingleThreaded": false,
+          "ParseMultipleLogs": true,
+          "SkipFailedTries": true,
+          "CustomTooShort": 0,
+          "ParsePhases": true,
+          "ParseCombatReplay": true,
+          "ComputeDamageModifiers": true,
+          "DetailledWvW": true,
+          "SaveOutHTML": false,
+          "HtmlExternalScripts": false,
+          "HtmlExternalScriptsPath": "",
+          "HtmlExternalScriptsCdn": "",
+          "LightTheme": false,
+          "HtmlCompressJson": false,
+          "SaveOutCSV": false,
+          "SaveOutJSON": true,
+          "IndentJSON": false,
+          "SaveOutXML": false,
+          "IndentXML": false,
+          "CompressRaw": false,
+          "RawTimelineArrays": true,
+          "UploadToDPSReports": false,
+          "DPSReportUserToken": "",
+          "UploadToWingman": false,
+          "WebhookURL": "",
+          "SendEmbedToWebhook": false,
+          "SendSimpleMessageToWebhook": false,
+          "MemoryLimit": 0
+        }'
         
         $config | Out-File -FilePath "ei_config.conf" -Encoding UTF8
         echo "✅ Created Elite Insights config file"
@@ -191,7 +189,8 @@ jobs:
         echo "Running: $command"
         
         # Execute the parsing
-        $process = Start-Process -FilePath ".\EliteInsights\GuildWars2EliteInsights-CLI.exe" -ArgumentList @("-c", "ei_config.conf") + $logPaths -Wait -PassThru -NoNewWindow
+        $argumentList = @("-c", "ei_config.conf") + $logPaths
+        $process = Start-Process -FilePath ".\EliteInsights\GuildWars2EliteInsights-CLI.exe" -ArgumentList $argumentList -Wait -PassThru -NoNewWindow
         
         if ($process.ExitCode -eq 0) {
           echo "✅ Elite Insights parsing completed successfully"
