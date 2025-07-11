@@ -191,7 +191,7 @@ jobs:
         echo "Running: $command"
         
         # Execute the parsing
-        $process = Start-Process -FilePath ".\EliteInsights\GuildWars2EliteInsights-CLI.exe" -ArgumentList "-c", "ei_config.conf", $logPaths -Wait -PassThru -NoNewWindow
+        $process = Start-Process -FilePath ".\EliteInsights\GuildWars2EliteInsights-CLI.exe" -ArgumentList @("-c", "ei_config.conf") + $logPaths -Wait -PassThru -NoNewWindow
         
         if ($process.ExitCode -eq 0) {
           echo "✅ Elite Insights parsing completed successfully"
