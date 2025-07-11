@@ -27,6 +27,13 @@ on:
       - 'templates/**'
       - 'automated_import.js'
 
+  # Trigger automatically after log parsing completes
+  workflow_run:
+    workflows: ["Parse ArcDPS Logs"]
+    types:
+      - completed
+    branches: [ main ]
+
 # Allow one concurrent deployment
 concurrency:
   group: "pages"
@@ -40,6 +47,9 @@ permissions:
 
 jobs:
   build:
+    # Only run if the triggering workflow succeeded (when triggered by workflow_run)
+    # or for other trigger types
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     
     steps:
@@ -68,6 +78,11 @@ jobs:
         if [ -d "tids" ]; then
           echo "Found $(find tids -name '*.tid' | wc -l) .tid files"
           ls -la tids/ | head -10
+          
+          # Show all .tid files for better visibility
+          echo ""
+          echo "All .tid files:"
+          find tids -name '*.tid' -exec basename {} \;
         else
           echo "❌ Tids directory not found"
           exit 1
@@ -107,6 +122,10 @@ jobs:
             # Check if tiddlers were imported
             if grep -q "storeArea" docs/index.html; then
               echo "✅ TiddlyWiki store area found"
+              
+              # Count imported tiddlers
+              tiddler_count=$(grep -o '<div [^>]*title="[^"]*"' docs/index.html | wc -l)
+              echo "📊 Imported approximately $tiddler_count tiddlers"
             else
               echo "⚠️  Warning: No store area found in output"
             fi
@@ -165,7 +184,17 @@ jobs:
         echo "3. ✅ Generated a complete TiddlyWiki in the \`docs/\` directory" >> $GITHUB_STEP_SUMMARY
         echo "4. ✅ Deployed to GitHub Pages" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # Add information about the trigger
+        if [ "${{ github.event_name }}" = "workflow_run" ]; then
+          echo "### Trigger:" >> $GITHUB_STEP_SUMMARY
+          echo "- This build was automatically triggered after ArcDPS log parsing completed" >> $GITHUB_STEP_SUMMARY
+          echo "- The parsed .tid files were automatically included in this build" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+        fi
+        
         echo "### Next time:" >> $GITHUB_STEP_SUMMARY
-        echo "- Just update your \`.tid\` files or template" >> $GITHUB_STEP_SUMMARY
+        echo "- Add new logs to the \`logs/\` directory to trigger automatic parsing" >> $GITHUB_STEP_SUMMARY
+        echo "- Or update your \`.tid\` files or template manually" >> $GITHUB_STEP_SUMMARY
         echo "- Push to the \`main\` branch" >> $GITHUB_STEP_SUMMARY
         echo "- This workflow will automatically rebuild and redeploy" >> $GITHUB_STEP_SUMMARY

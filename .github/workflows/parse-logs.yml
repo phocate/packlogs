@@ -1,0 +1,340 @@
+name: Parse ArcDPS Logs
+
+on:
+  # Trigger when logs are added
+  push:
+    branches: [ main ]
+    paths:
+      - 'logs/**'
+      - '.github/workflows/parse-logs.yml'
+  
+  # Allow manual triggering
+  workflow_dispatch:
+    inputs:
+      force_parse:
+        description: 'Force parsing even if no new logs'
+        required: false
+        default: false
+        type: boolean
+
+# Allow one concurrent parsing job
+concurrency:
+  group: "log-parsing"
+  cancel-in-progress: true
+
+jobs:
+  parse-logs:
+    runs-on: windows-latest
+    
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+      
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install xlrd xlutils xlwt jsons requests xlsxwriter openpyxl
+        
+    - name: Verify log files
+      run: |
+        echo "Checking for log files..."
+        if (Test-Path "logs") {
+          $logFiles = Get-ChildItem -Path "logs" -Recurse -Include "*.evtc", "*.evtc.zip", "*.zevtc"
+          echo "Found $($logFiles.Count) log files:"
+          $logFiles | ForEach-Object { echo "  $($_.Name)" }
+          
+          if ($logFiles.Count -eq 0) {
+            echo "❌ No log files found in logs/ directory"
+            exit 1
+          }
+        } else {
+          echo "❌ logs/ directory not found"
+          exit 1
+        }
+      shell: pwsh
+      
+    - name: Download and setup Elite Insights
+      run: |
+        echo "Downloading Elite Insights..."
+        $url = "https://github.com/baaron4/GW2-Elite-Insights-Parser/releases/latest/download/GW2EI.zip"
+        $output = "GW2EI.zip"
+        
+        Invoke-WebRequest -Uri $url -OutFile $output
+        echo "✅ Downloaded Elite Insights"
+        
+        echo "Extracting Elite Insights..."
+        Expand-Archive -Path $output -DestinationPath "EliteInsights" -Force
+        echo "✅ Extracted Elite Insights"
+        
+        # Verify the CLI executable exists
+        if (Test-Path "EliteInsights\GuildWars2EliteInsights-CLI.exe") {
+          echo "✅ Elite Insights CLI found"
+        } else {
+          echo "❌ Elite Insights CLI not found"
+          Get-ChildItem "EliteInsights" -Recurse | ForEach-Object { echo $_.FullName }
+          exit 1
+        }
+      shell: pwsh
+      
+    - name: Download and setup TW5 parser
+      run: |
+        echo "Downloading TW5 parser..."
+        $url = "https://github.com/Drevarr/arcdps_top_stats_parser/archive/refs/heads/main.zip"
+        $output = "tw5_parser.zip"
+        
+        Invoke-WebRequest -Uri $url -OutFile $output
+        echo "✅ Downloaded TW5 parser"
+        
+        echo "Extracting TW5 parser..."
+        Expand-Archive -Path $output -DestinationPath "." -Force
+        
+        # Move contents to a cleaner directory name
+        if (Test-Path "arcdps_top_stats_parser-main") {
+          Move-Item "arcdps_top_stats_parser-main" "TW5Parser"
+          echo "✅ Extracted TW5 parser to TW5Parser/"
+        } else {
+          echo "❌ TW5 parser extraction failed"
+          exit 1
+        }
+        
+        # Verify the parser script exists
+        if (Test-Path "TW5Parser\TW5_parse_top_stats_detailed.py") {
+          echo "✅ TW5 parser script found"
+        } else {
+          echo "❌ TW5 parser script not found"
+          Get-ChildItem "TW5Parser" | ForEach-Object { echo $_.Name }
+          exit 1
+        }
+      shell: pwsh
+      
+    - name: Create Elite Insights config
+      run: |
+        echo "Creating Elite Insights configuration..."
+        
+        # Create config file for detailed WvW parsing with JSON output
+        $config = @"
+{
+  "SaveAtOut": false,
+  "OutLocation": "parsed",
+  "SaveOutTrace": false,
+  "Anonymous": false,
+  "AddPoVProf": false,
+  "AddDuration": false,
+  "SingleThreaded": false,
+  "ParseMultipleLogs": true,
+  "SkipFailedTries": true,
+  "CustomTooShort": 0,
+  "ParsePhases": true,
+  "ParseCombatReplay": true,
+  "ComputeDamageModifiers": true,
+  "DetailledWvW": true,
+  "SaveOutHTML": false,
+  "HtmlExternalScripts": false,
+  "HtmlExternalScriptsPath": "",
+  "HtmlExternalScriptsCdn": "",
+  "LightTheme": false,
+  "HtmlCompressJson": false,
+  "SaveOutCSV": false,
+  "SaveOutJSON": true,
+  "IndentJSON": false,
+  "SaveOutXML": false,
+  "IndentXML": false,
+  "CompressRaw": false,
+  "RawTimelineArrays": true,
+  "UploadToDPSReports": false,
+  "DPSReportUserToken": "",
+  "UploadToWingman": false,
+  "WebhookURL": "",
+  "SendEmbedToWebhook": false,
+  "SendSimpleMessageToWebhook": false,
+  "MemoryLimit": 0
+}
+"@
+        
+        $config | Out-File -FilePath "ei_config.conf" -Encoding UTF8
+        echo "✅ Created Elite Insights config file"
+      shell: pwsh
+      
+    - name: Create directories
+      run: |
+        # Create output directories
+        New-Item -ItemType Directory -Path "parsed" -Force | Out-Null
+        New-Item -ItemType Directory -Path "tids" -Force | Out-Null
+        echo "✅ Created output directories"
+      shell: pwsh
+      
+    - name: Parse logs with Elite Insights
+      run: |
+        echo "Starting log parsing with Elite Insights..."
+        
+        # Get all log files
+        $logFiles = Get-ChildItem -Path "logs" -Recurse -Include "*.evtc", "*.evtc.zip", "*.zevtc"
+        
+        if ($logFiles.Count -eq 0) {
+          echo "❌ No log files found to parse"
+          exit 1
+        }
+        
+        echo "Found $($logFiles.Count) log files to parse"
+        
+        # Build command with all log files
+        $logPaths = $logFiles | ForEach-Object { "`"$($_.FullName)`"" }
+        $logPathsString = $logPaths -join " "
+        
+        $command = ".\EliteInsights\GuildWars2EliteInsights-CLI.exe -c `"ei_config.conf`" $logPathsString"
+        
+        echo "Running: $command"
+        
+        # Execute the parsing
+        $process = Start-Process -FilePath ".\EliteInsights\GuildWars2EliteInsights-CLI.exe" -ArgumentList "-c", "ei_config.conf", $logPaths -Wait -PassThru -NoNewWindow
+        
+        if ($process.ExitCode -eq 0) {
+          echo "✅ Elite Insights parsing completed successfully"
+        } else {
+          echo "❌ Elite Insights parsing failed with exit code: $($process.ExitCode)"
+          exit 1
+        }
+        
+        # Verify output
+        $jsonFiles = Get-ChildItem -Path "parsed" -Filter "*.json" -Recurse
+        echo "Generated $($jsonFiles.Count) JSON files in parsed/ directory"
+        
+        if ($jsonFiles.Count -eq 0) {
+          echo "❌ No JSON files were generated"
+          exit 1
+        }
+      shell: pwsh
+      
+    - name: Setup Guild Data for TW5 parser
+      run: |
+        echo "Setting up Guild Data configuration..."
+        
+        # Check if Guild_Data.py exists, if not create a template
+        if (-not (Test-Path "TW5Parser\Guild_Data.py")) {
+          $guildDataTemplate = @"
+# Guild configuration for TW5 parser
+# Replace with your actual Guild ID and API Key
+
+Guild_ID = 'YOUR_GUILD_ID_HERE'
+API_Key = 'YOUR_API_KEY_HERE'
+"@
+          
+          $guildDataTemplate | Out-File -FilePath "TW5Parser\Guild_Data.py" -Encoding UTF8
+          echo "⚠️  Created template Guild_Data.py - you may want to configure it with actual values"
+        } else {
+          echo "✅ Guild_Data.py already exists"
+        }
+      shell: pwsh
+      
+    - name: Run TW5 parser
+      run: |
+        echo "Running TW5 parser on parsed JSON files..."
+        
+        # Change to TW5Parser directory
+        cd TW5Parser
+        
+        # Run the TW5 parser
+        python TW5_parse_top_stats_detailed.py "..\parsed"
+        
+        if ($LASTEXITCODE -eq 0) {
+          echo "✅ TW5 parser completed successfully"
+        } else {
+          echo "❌ TW5 parser failed with exit code: $LASTEXITCODE"
+          exit 1
+        }
+        
+        # Check for output files in parsed directory
+        cd ..
+        $tidFiles = Get-ChildItem -Path "parsed" -Filter "*.tid"
+        echo "Generated $($tidFiles.Count) TID files"
+        
+        if ($tidFiles.Count -gt 0) {
+          echo "TID files found:"
+          $tidFiles | ForEach-Object { echo "  $($_.Name)" }
+        }
+      shell: pwsh
+      
+    - name: Move TID files to tids directory
+      run: |
+        echo "Moving TID files to tids/ directory..."
+        
+        # Move all .tid files from parsed/ to tids/
+        $tidFiles = Get-ChildItem -Path "parsed" -Filter "*.tid"
+        
+        foreach ($file in $tidFiles) {
+          $destination = "tids\$($file.Name)"
+          Move-Item -Path $file.FullName -Destination $destination -Force
+          echo "Moved $($file.Name) to tids/"
+        }
+        
+        # Verify files were moved
+        $finalTidFiles = Get-ChildItem -Path "tids" -Filter "*.tid"
+        echo "✅ Successfully moved $($finalTidFiles.Count) TID files to tids/ directory"
+        
+        if ($finalTidFiles.Count -gt 0) {
+          echo "Final TID files in tids/:"
+          $finalTidFiles | ForEach-Object { echo "  $($_.Name)" }
+        }
+      shell: pwsh
+      
+    - name: Create parsing summary
+      run: |
+        echo "## 📊 Log Parsing Complete" >> $env:GITHUB_STEP_SUMMARY
+        echo "" >> $env:GITHUB_STEP_SUMMARY
+        
+        # Count files
+        $logFiles = Get-ChildItem -Path "logs" -Recurse -Include "*.evtc", "*.evtc.zip", "*.zevtc"
+        $jsonFiles = Get-ChildItem -Path "parsed" -Filter "*.json" -ErrorAction SilentlyContinue
+        $tidFiles = Get-ChildItem -Path "tids" -Filter "*.tid" -ErrorAction SilentlyContinue
+        
+        echo "### Processing Summary:" >> $env:GITHUB_STEP_SUMMARY
+        echo "- 📁 **Log files processed:** $($logFiles.Count)" >> $env:GITHUB_STEP_SUMMARY
+        echo "- 🔧 **JSON files generated:** $($jsonFiles.Count)" >> $env:GITHUB_STEP_SUMMARY
+        echo "- 📄 **TID files created:** $($tidFiles.Count)" >> $env:GITHUB_STEP_SUMMARY
+        echo "" >> $env:GITHUB_STEP_SUMMARY
+        echo "### What's Next:" >> $env:GITHUB_STEP_SUMMARY
+        echo "- The TID files are now ready in the \`tids/\` directory" >> $env:GITHUB_STEP_SUMMARY
+        echo "- Your existing TiddlyWiki build action will automatically process these files" >> $env:GITHUB_STEP_SUMMARY
+        echo "- The final TiddlyWiki will be published to GitHub Pages" >> $env:GITHUB_STEP_SUMMARY
+        
+        # Also show TID file names if any were created
+        if ($tidFiles.Count -gt 0) {
+          echo "" >> $env:GITHUB_STEP_SUMMARY
+          echo "### Generated TID Files:" >> $env:GITHUB_STEP_SUMMARY
+          $tidFiles | ForEach-Object { echo "- $($_.Name)" >> $env:GITHUB_STEP_SUMMARY }
+        }
+      shell: pwsh
+      
+    - name: Commit and push TID files
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        
+        # Add the TID files
+        git add tids/
+        
+        # Check if there are changes to commit
+        if (git diff --staged --quiet) {
+          echo "No changes to commit"
+        } else {
+          git commit -m "Add parsed TID files from ArcDPS logs"
+          git push
+          echo "✅ Committed and pushed TID files"
+        }
+      shell: pwsh
+      
+    - name: Upload artifacts for debugging
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: parsing-artifacts
+        path: |
+          parsed/
+          tids/
+          *.log
+        retention-days: 7
